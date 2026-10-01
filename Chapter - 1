@@ -1,12 +1,17 @@
+---
+title: "Basic Chapter 1 — Introduction to Go"
+layout: default
+---
+
 # Basic Chapter 1 — Introduction to Go
 
 We’ll restart from the beginning and do this properly as a detailed, learn-by-doing chapter, not as a revision.
 
-The goal of this chapter is not to memorize Go syntax. By the end, you should understand what Go is, how a Go program is structured, how the Go toolchain executes it, and how to write and run your first programs yourself.
+The goal of this chapter is not to memorize Go syntax. By the end, you should understand what Go is, how a Go program is structured, how the Go toolchain executes it, and how to write and run your first Go program.
 
 ---
 
-# 1. What Is Go?
+## 1. What Is Go?
 
 Go (Golang) is a programming language created at Google.
 
@@ -41,7 +46,7 @@ Go → Backend → PostgreSQL/MongoDB/Kafka → Docker → Kubernetes → Linux
 
 ---
 
-# 2. Why Was Go Created?
+## 2. Why Was Go Created?
 
 Go was created by Robert Griesemer, Rob Pike, and Ken Thompson at Google.
 
@@ -67,7 +72,7 @@ This is not saying Go is literally a combination of C++ and Python. Rather, Go w
 
 ---
 
-# 3. Go Is a Compiled Language
+## 3. Go Is a Compiled Language
 
 This is one of the first concepts you should understand properly.
 
@@ -85,7 +90,7 @@ func main() {
 
 You write source code.
 
-The computer's CPU does not directly execute this Go source code.
+The computer’s CPU does not directly execute this Go source code.
 
 Instead:
 
@@ -107,7 +112,7 @@ The program that converts your Go source code into executable machine code is th
 
 ---
 
-# 4. Source Code vs Executable
+## 4. Source Code vs Executable
 
 When you create:
 
@@ -153,19 +158,19 @@ hello
 
 are two very different things.
 
-## hello.go
+### hello.go
 
 Human-readable Go source code.
 
-## hello
+### hello
 
 Compiled executable.
 
 ---
 
-# 5. Your First Go Program
+## 5. Your First Go Program
 
-Let's create our first program.
+Let’s create our first program.
 
 Create a directory:
 
@@ -192,13 +197,13 @@ func main() {
 }
 ```
 
-Don't worry if you don't understand everything yet.
+Don’t worry if you don’t understand everything yet.
 
 We are going to take it apart line by line.
 
 ---
 
-# 6. Understanding package main
+## 6. Understanding `package main`
 
 The first line is:
 
@@ -210,9 +215,9 @@ A Go source file belongs to a package.
 
 Here we are saying:
 
-> This file belongs to the main package.
+> This file belongs to the `main` package.
 
-main has special meaning in Go.
+`main` has special meaning in Go.
 
 A Go program that is intended to produce an executable normally has:
 
@@ -226,7 +231,7 @@ and contains:
 func main()
 ```
 
-The main() function is the entry point of the executable program.
+The `main()` function is the entry point of the executable program.
 
 Conceptually:
 
@@ -251,7 +256,7 @@ func main()
 
 ---
 
-# 7. Understanding func main()
+## 7. Understanding `func main()`
 
 This:
 
@@ -260,7 +265,7 @@ func main() {
 }
 ```
 
-defines a function named main.
+defines a function named `main`.
 
 For now, think of a function as:
 
@@ -284,7 +289,7 @@ is special because it is the entry point of an executable Go program.
 
 ---
 
-# 8. Understanding import
+## 8. Understanding `import`
 
 Our program contains:
 
@@ -294,9 +299,9 @@ import "fmt"
 
 This tells Go:
 
-> I want to use the fmt package.
+> I want to use the `fmt` package.
 
-fmt is part of Go's standard library.
+`fmt` is part of Go’s standard library.
 
 It provides functionality for formatted input and output.
 
@@ -310,7 +315,7 @@ prints something to the terminal.
 
 ---
 
-# 9. Understanding fmt.Println
+## 9. Understanding `fmt.Println`
 
 This:
 
@@ -326,19 +331,19 @@ fmt
  └── Println
 ```
 
-fmt is the package.
+`fmt` is the package.
 
-Println is something provided by that package.
+`Println` is something provided by that package.
 
 The dot means:
 
-> Access Println from the fmt package.
+> Access `Println` from the `fmt` package.
 
-We'll study packages much more deeply later.
+We’ll study packages much more deeply later.
 
 ---
 
-# 10. Let's Run the Program
+## 10. Let’s Run the Program
 
 From inside the directory, run:
 
@@ -354,9 +359,9 @@ Hello, World!
 
 Now something important happened.
 
-You didn't explicitly create an executable.
+You didn’t explicitly create an executable.
 
-That's because:
+That’s because:
 
 ```bash
 go run main.go
@@ -384,9 +389,9 @@ Hello, World!
 
 ---
 
-# 11. go run vs go build
+## 11. `go run` vs `go build`
 
-Now let's try:
+Now let’s try:
 
 ```bash
 go build main.go
@@ -405,7 +410,7 @@ main.go
 main
 ```
 
-The executable is named main because we explicitly built main.go.
+The executable is named `main` because we explicitly built `main.go`.
 
 You can execute it:
 
@@ -421,17 +426,17 @@ Hello, World!
 
 The important difference is:
 
-## go run
+### `go run`
 
 Conveniently builds and runs your program.
 
-## go build
+### `go build`
 
 Builds the executable.
 
 ---
 
-# 12. go run Does NOT Mean "Run the .go File Directly"
+## 12. `go run` Does NOT Mean “Run the .go File Directly”
 
 This is a very important beginner misconception.
 
@@ -467,11 +472,11 @@ temporary executable
      output
 ```
 
-That's why Go is a compiled language.
+That’s why Go is a compiled language.
 
 ---
 
-# 13. What Is the Go Toolchain?
+## 13. What Is the Go Toolchain?
 
 Commands such as:
 
@@ -530,7 +535,7 @@ We will eventually understand the important ones individually.
 
 ---
 
-# 14. Check Your Go Installation
+## 14. Check Your Go Installation
 
 Run:
 
@@ -538,7 +543,7 @@ Run:
 go version
 ```
 
-You'll get something similar to:
+You’ll get something similar to:
 
 ```text
 go version go1.xx.x darwin/arm64
@@ -570,11 +575,11 @@ arm64
 
 means the CPU architecture.
 
-Your Mac is Apple Silicon, so arm64 is expected.
+Your Mac is Apple Silicon, so `arm64` is expected.
 
 ---
 
-# 15. go env
+## 15. `go env`
 
 Now run:
 
@@ -582,9 +587,9 @@ Now run:
 go env
 ```
 
-This prints Go's environment configuration.
+This prints Go’s environment configuration.
 
-You'll see variables such as:
+You’ll see variables such as:
 
 ```text
 GOARCH
@@ -598,7 +603,7 @@ GOTOOLCHAIN
 GOVERSION
 ```
 
-Don't try to memorize these.
+Don’t try to memorize these.
 
 We will understand them gradually.
 
@@ -640,11 +645,11 @@ go env GOPATH
 
 ---
 
-# 16. GOROOT vs GOPATH
+## 16. `GOROOT` vs `GOPATH`
 
-Let's establish the basic distinction now.
+Let’s establish the basic distinction now.
 
-## GOROOT
+### `GOROOT`
 
 Think:
 
@@ -663,7 +668,7 @@ GOROOT
  └── ...
 ```
 
-## GOPATH
+### `GOPATH`
 
 Think:
 
@@ -673,7 +678,7 @@ It is not where your Go installation lives.
 
 And importantly:
 
-> Modern Go modules do not require you to put your project inside GOPATH.
+> Modern Go modules do not require you to put your project inside `GOPATH`.
 
 For example, your project can happily live here:
 
@@ -689,11 +694,11 @@ $GOPATH/src/app
 
 That old GOPATH-centric workflow is no longer the normal way to develop Go applications.
 
-We'll study this properly when we reach Packages & Modules.
+We’ll study this properly when we reach Packages & Modules.
 
 ---
 
-# 17. Your First Experiment
+## 17. Your First Experiment
 
 Now modify your program.
 
@@ -737,7 +742,7 @@ func main() {
 
 Run it.
 
-Expected:
+Expected output:
 
 ```text
 My name is Saket
@@ -757,11 +762,11 @@ are three separate statements.
 
 ---
 
-# 18. Semicolons in Go
+## 18. Semicolons in Go
 
 You may notice something unusual.
 
-We didn't write:
+We didn’t write:
 
 ```go
 fmt.Println("Hello");
@@ -791,11 +796,11 @@ y := 20;
 fmt.Println(x);
 ```
 
-Although semicolons exist in the Go language grammar, you normally don't write them manually.
+Although semicolons exist in the Go language grammar, you normally don’t write them manually.
 
 ---
 
-# 19. Go Formatting
+## 19. Go Formatting
 
 Go has a standard formatter:
 
@@ -803,7 +808,7 @@ Go has a standard formatter:
 gofmt
 ```
 
-Usually you'll use:
+Usually you’ll use:
 
 ```bash
 gofmt -w main.go
@@ -829,7 +834,7 @@ Instead of developers arguing endlessly about indentation and formatting, the fo
 
 ---
 
-# 20. Try Breaking the Program
+## 20. Try Breaking the Program
 
 This is important.
 
@@ -876,7 +881,7 @@ Go will tell you approximately where the problem is.
 
 ---
 
-# 21. Syntax Error vs Runtime Error
+## 21. Syntax Error vs Runtime Error
 
 For example:
 
@@ -888,9 +893,9 @@ has invalid syntax.
 
 The compiler can detect this before the program runs.
 
-That's a compile-time error.
+That’s a compile-time error.
 
-Later we'll encounter errors that happen while the program is actually running.
+Later we’ll encounter errors that happen while the program is actually running.
 
 For example:
 
@@ -904,15 +909,15 @@ Something goes wrong
 Runtime error
 ```
 
-We'll study both types carefully later.
+We’ll study both types carefully later.
 
 ---
 
-# 22. Comments
+## 22. Comments
 
 Go supports comments.
 
-## Single-line comment
+### Single-line comment
 
 ```go
 // This is a comment
@@ -937,7 +942,7 @@ Comments are for humans.
 
 ---
 
-# 23. Multi-line Comments
+## 23. Multi-line Comments
 
 You can also write:
 
@@ -966,7 +971,7 @@ func main() {
 
 ---
 
-# 24. Case Sensitivity
+## 24. Case Sensitivity
 
 Go is case-sensitive.
 
@@ -999,296 +1004,3 @@ Likewise:
 ```text
 Println
 ```
-
-and:
-
-```text
-println
-```
-
-are different names.
-
-This becomes especially important when we study exported vs unexported identifiers.
-
----
-
-# 25. Your First Small Program
-
-Let's now write something slightly more interesting.
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-    fmt.Println("===== GO LEARNING =====")
-    fmt.Println("Chapter 1")
-    fmt.Println("I am learning Go by doing.")
-    fmt.Println("This is my first Go program.")
-}
-```
-
-Run:
-
-```bash
-go run main.go
-```
-
-Expected output:
-
-```text
-===== GO LEARNING =====
-Chapter 1
-I am learning Go by doing.
-This is my first Go program.
-```
-
----
-
-# 26. What Have We Actually Learned?
-
-At this point, you should understand these concepts:
-
-| Concept | Meaning |
-|---|---|
-| Go | Programming language |
-| Source code | Code written by the programmer |
-| Compiler | Converts Go source into machine code |
-| package | Groups Go source files |
-| package main | Special package for an executable |
-| func | Defines a function |
-| main() | Entry point of an executable |
-| import | Makes another package available |
-| fmt | Standard library package |
-| Println | Prints a line |
-| go run | Builds/runs a Go program conveniently |
-| go build | Builds an executable |
-| gofmt | Formats Go source code |
-| go env | Shows Go environment configuration |
-| GOROOT | Go installation/toolchain location |
-| GOPATH | User-level Go workspace/cache/install environment |
-| Comment | Information ignored by compiler |
-
----
-
-# 27. Your First Exercises
-
-Don't just read these. Actually do them.
-
-## Exercise 1 — Introduction
-
-Create a program that prints:
-
-```text
-My name is Saket.
-I am learning Go.
-I want to become good at backend development.
-```
-
----
-
-## Exercise 2 — Five Lines
-
-Print five different messages:
-
-```text
-Line 1
-Line 2
-Line 3
-Line 4
-Line 5
-```
-
-Use five separate fmt.Println() calls.
-
----
-
-## Exercise 3 — Comments
-
-Add at least three comments to your program:
-
-```go
-// ...
-```
-
-and make sure the program still works.
-
----
-
-## Exercise 4 — go build
-
-Build your program:
-
-```bash
-go build main.go
-```
-
-Then find the generated executable:
-
-```bash
-ls -l
-```
-
-Run it directly:
-
-```bash
-./main
-```
-
-The executable name is main when you explicitly build main.go this way.
-
-Important: We are deliberately using `go build main.go` here because we have not yet learned Go modules. We will learn why plain `go build` behaves differently when we reach Packages & Modules.
-
----
-
-## Exercise 5 — Intentionally Break It
-
-Create a syntax error.
-
-For example, remove:
-
-```text
-)
-```
-
-from:
-
-```go
-fmt.Println("Hello")
-```
-
-Then run:
-
-```bash
-go run main.go
-```
-
-Read the compiler error.
-
-Then fix it.
-
----
-
-## Exercise 6 — Environment
-
-Run these:
-
-```bash
-go version
-```
-
-```bash
-go env GOOS
-```
-
-```bash
-go env GOARCH
-```
-
-```bash
-go env GOROOT
-```
-
-```bash
-go env GOPATH
-```
-
-```bash
-go env GOTOOLCHAIN
-```
-
-Don't worry about understanding every value yet.
-
-The goal is to become comfortable asking Go about its own environment.
-
----
-
-# 28. One Important Mental Model
-
-I want you to remember this diagram:
-
-```text
-                YOU
-                 │
-                 │ write
-                 ↓
-            main.go
-         Go source code
-                 │
-                 │
-                 ↓
-          Go toolchain
-                 │
-            ┌────┴────┐
-            │ compiler │
-            └────┬────┘
-                 │
-                 ↓
-           machine code
-                 │
-                 ↓
-            executable
-                 │
-                 ↓
-               CPU
-```
-
-And when you use:
-
-```bash
-go run main.go
-```
-
-think:
-
-```text
-Go source
-   ↓
-compile
-   ↓
-run
-```
-
-not:
-
-```text
-Go source
-   ↓
-CPU directly executes it
-```
-
-That distinction will make many later Go concepts much easier.
-
----
-
-# 29. What Comes Next in Chapter 1?
-
-We are not finished with Chapter 1 yet.
-
-The next section should go deeper into the Go environment and program execution.
-
-## Chapter 1 — Part 2
-
-1. What exactly happens when `go run` executes
-2. What exactly happens during `go build`
-3. Go compiler vs Go command
-4. Go toolchain components
-5. `go`, `gofmt`, compiler, linker
-6. Source code → compilation → linking → executable
-7. Operating system and CPU architecture
-8. `GOOS`
-9. `GOARCH`
-10. Cross compilation
-11. `GOROOT`
-12. `GOPATH`
-13. `GOTOOLCHAIN`
-14. `go env`
-15. How Go finds packages
-16. Standard library vs third-party packages
-17. A first look at modules
-18. Why `go.mod` exists
-19. Project directory vs module path
-20. Hands-on experiments with all of the above
-
-We'll take these slowly and technically, rather than treating them as a quick overview.
