@@ -1,46 +1,206 @@
-# Basic Chapter 1 — Part 2
+# Chapter 2 — Variables
 
-## Go Toolchain, Compilation, Environment, Packages, and Modules
-In Part 1, we established the basic model:
+This chapter teaches **variables from the beginning**, including what actually happens conceptually when you declare, initialize, assign, and reassign a variable in Go.
 
-```text
-Go source code
-      ↓
-   compiler
-      ↓
- machine code
-      ↓
- executable
-      ↓
-    CPU
-```
-
-Now we're going to make that model much more precise.
-
-This part is important because later, when you work with:
-
-- Packages
-- Modules
-- PostgreSQL
-- MongoDB
-- Kafka
-- REST APIs
-- Docker
-- Kubernetes
-
-you will constantly interact with the Go toolchain.
+> One small correction first: the code examples are **Go**, not JavaScript or YAML. In your notes, I'll use Go code blocks (`go`) so they can be copied directly.
 
 ---
 
-# 1. What Exactly Happens When `go run` Executes?
-Suppose you have:
+# 2.1 What Is a Variable?
 
-```text
-hello/
-└── main.go
+A **variable** is a named location used by a program to hold a value.
+
+For example:
+
+```go
+age := 40
 ```
 
-and `main.go` contains:
+Here:
+
+- `age` is the **variable name**
+- `40` is the **value**
+- Go associates `age` with a location where that value can be stored
+
+You can then use the variable:
+
+```go
+fmt.Println(age)
+```
+
+Output:
+
+```text
+40
+```
+
+## Think of a variable as a named box
+
+Conceptually:
+
+```text
+        age
+         │
+         ▼
+      ┌─────┐
+      │ 40  │
+      └─────┘
+```
+
+If we later write:
+
+```go
+age = 41
+```
+
+the value associated with `age` changes:
+
+```text
+        age
+         │
+         ▼
+      ┌─────┐
+      │ 41  │
+      └─────┘
+```
+
+The important distinction is:
+
+```text
+Variable → has a name
+Value    → data stored in/associated with the variable
+Type     → tells Go what kind of value the variable holds
+```
+
+For example:
+
+```go
+var age int = 40
+```
+
+means:
+
+```text
+name  = age
+type  = int
+value = 40
+```
+
+---
+
+# 2.1.1 Why Do We Need Variables?
+
+Imagine you want to calculate someone's age after five years.
+
+Without a variable:
+
+```go
+fmt.Println(40 + 5)
+```
+
+This works, but it isn't very meaningful.
+
+With a variable:
+
+```go
+age := 40
+fmt.Println(age + 5)
+```
+
+Output:
+
+```text
+45
+```
+
+Now the program can work with the concept of an `age`.
+
+Variables allow us to:
+
+- store data
+- reuse data
+- modify data
+- perform calculations
+- pass data to functions
+- make programs dynamic
+
+For example:
+
+```go
+salary := 100000
+
+salary = salary + 10000
+
+fmt.Println(salary)
+```
+
+Output:
+
+```text
+110000
+```
+
+---
+
+# 2.1.2 Variable Declaration
+
+**Declaration** means telling Go that a variable exists.
+
+For example:
+
+```go
+var age int
+```
+
+This tells Go:
+
+> Create a variable called `age` whose type is `int`.
+
+At this point, we haven't explicitly provided a value.
+
+Go gives it the **zero value** for that type.
+
+For `int`, the zero value is:
+
+```text
+0
+```
+
+So:
+
+```go
+var age int
+
+fmt.Println(age)
+```
+
+produces:
+
+```text
+0
+```
+
+---
+
+# 2.1.3 Variable Initialization
+
+Initialization means giving a variable its initial value.
+
+For example:
+
+```go
+var age int = 40
+```
+
+Now:
+
+```text
+name → age
+type → int
+value → 40
+```
+
+Example:
 
 ```go
 package main
@@ -48,353 +208,901 @@ package main
 import "fmt"
 
 func main() {
-    fmt.Println("Hello")
+    var age int = 40
+
+    fmt.Println(age)
 }
 ```
 
-You execute:
-
-```bash
-go run main.go
-```
-
-A beginner might imagine:
+Output:
 
 ```text
-main.go
-   ↓
-run
-```
-
-But that's not what actually happens.
-
-A better mental model is:
-
-```text
-             go run main.go
-                    │
-                    ↓
-              Go command
-                    │
-                    ↓
-          Analyze Go source
-                    │
-                    ↓
-              Compile
-                    │
-                    ↓
-           Link dependencies
-                    │
-                    ↓
-        Temporary executable
-                    │
-                    ↓
-               Execute
-                    │
-                    ↓
-                 Output
-```
-
-So `go run` still involves compilation.
-
----
-
-# 2. Does `go run` Create an Executable?
-Yes.
-
-But normally it creates a **temporary executable** rather than leaving the executable in your current directory as `go build` does.
-
-Conceptually:
-
-```text
-main.go
-   │
-   ↓
-compile
-   │
-   ↓
-temporary executable
-   │
-   ↓
-run
-   │
-   ↓
-output
-```
-
-That's why after:
-
-```bash
-go run main.go
-```
-
-you normally don't see a permanent executable appearing beside:
-
-```text
-main.go
+40
 ```
 
 ---
 
-# 3. What Exactly Happens During `go build`?
-Now run:
+# 2.1.4 Assignment
 
-```bash
-go build
+Assignment means putting a value into an existing variable.
+
+Example:
+
+```go
+var age int
+
+age = 40
 ```
 
-The process is conceptually:
+There are two separate operations here:
 
-```text
-Go source
-    │
-    ↓
-Package analysis
-    │
-    ↓
-Compile
-    │
-    ↓
-Object/code generation
-    │
-    ↓
-Link
-    │
-    ↓
-Executable
+```go
+var age int
 ```
 
-Unlike `go run`, the resulting executable is normally left in your directory.
+Declaration.
+
+Then:
+
+```go
+age = 40
+```
+
+Assignment.
+
+You can later assign another value:
+
+```go
+age = 41
+```
+
+Now the variable contains `41`.
+
+---
+
+# 2.2 `var`
+
+The `var` keyword is used to declare variables.
+
+Basic syntax:
+
+```go
+var variableName type
+```
 
 For example:
 
+```go
+var age int
+var name string
+```
+
+You can print them:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    var age int
+    var name string
+
+    fmt.Println(age)
+    fmt.Println(name)
+}
+```
+
+Output:
+
 ```text
-hello/
-├── main.go
-└── hello
+0
+```
+
+Why is `name` empty?
+
+Because the zero value of `string` is:
+
+```text
+""
+```
+
+The empty string doesn't visibly print anything.
+
+---
+
+## Common zero values
+
+Go automatically gives variables their zero value when you don't provide an initial value.
+
+| Type | Zero value |
+| --- | --- |
+| `int` | `0` |
+| `float64` | `0` |
+| `bool` | `false` |
+| `string` | `""` |
+| pointer | `nil` |
+| slice | `nil` |
+| map | `nil` |
+
+For example:
+
+```go
+var age int
+var salary float64
+var active bool
+var name string
+
+fmt.Println(age)
+fmt.Println(salary)
+fmt.Println(active)
+fmt.Println(name)
+```
+
+Output:
+
+```text
+0
+0
+false
+```
+
+---
+
+# 2.2.1 Why Does Go Have Zero Values?
+
+One important Go design principle is:
+
+> Variables should have a useful, predictable default value.
+
+For example:
+
+```go
+var count int
+```
+
+You don't get an undefined or garbage value.
+
+You get:
+
+```text
+0
+```
+
+Therefore this is safe:
+
+```go
+var count int
+
+count++
+```
+
+After this:
+
+```go
+count = 1
+```
+
+---
+
+# 2.3 Declaration + Initialization
+
+You can declare and initialize a variable in one statement:
+
+```go
+var age int = 40
+```
+
+And:
+
+```go
+var name string = "Saket"
+```
+
+Complete example:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    var age int = 40
+    var name string = "Saket"
+
+    fmt.Println(name)
+    fmt.Println(age)
+}
+```
+
+Output:
+
+```text
+Saket
+40
+```
+
+Here:
+
+```go
+var age int = 40
+```
+
+contains four important parts:
+
+```text
+var     age     int     =     40
+│       │       │       │     │
+│       │       │       │     └── value
+│       │       │       └──────── assignment/initialization
+│       │       └──────────────── type
+│       └──────────────────────── variable name
+└──────────────────────────────── keyword
+```
+
+---
+
+# 2.4 Type Inference
+
+Go can sometimes determine the type automatically.
+
+Instead of:
+
+```go
+var age int = 40
+```
+
+you can write:
+
+```go
+var age = 40
+```
+
+Go looks at:
+
+```text
+40
+```
+
+and determines that the variable should be an integer type (`int`).
+
+Similarly:
+
+```go
+var name = "Saket"
+```
+
+Go determines:
+
+```text
+name → string
+```
+
+Example:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    var age = 40
+    var name = "Saket"
+
+    fmt.Println(age)
+    fmt.Println(name)
+}
+```
+
+This is called **type inference**.
+
+---
+
+## Explicit type vs inferred type
+
+Explicit:
+
+```go
+var age int = 40
+```
+
+Inferred:
+
+```go
+var age = 40
+```
+
+Both result in an `int` variable here.
+
+For basic cases, Go can determine the type from the initial value.
+
+---
+
+# 2.5 Short Variable Declaration `:=`
+
+Go provides an even shorter way:
+
+```go
+age := 40
+```
+
+This is called a **short variable declaration**.
+
+It essentially combines:
+
+```text
+declaration
++
+initialization
+```
+
+So:
+
+```go
+age := 40
+```
+
+is similar to:
+
+```go
+var age = 40
+```
+
+And because Go infers the type:
+
+```text
+age → int
+```
+
+Likewise:
+
+```go
+name := "Saket"
+```
+
+creates a string variable.
+
+---
+
+## `:=` can only be used for new variables
+
+This is extremely important.
+
+This is valid:
+
+```go
+age := 40
+```
+
+But once `age` already exists:
+
+```go
+age := 40
+age := 41
+```
+
+the second line produces an error.
+
+Why?
+
+Because `:=` means:
+
+> Declare a new variable.
+
+But `age` already exists.
+
+To change its value, use:
+
+```go
+age = 41
+```
+
+So:
+
+```go
+age := 40
+age = 41
+```
+
+is correct.
+
+---
+
+# 2.6 Multiple Variables
+
+Go allows you to declare multiple variables together.
+
+For example:
+
+```go
+var a, b int
+```
+
+This creates two variables:
+
+```text
+a → int
+b → int
+```
+
+Both initially contain the zero value:
+
+```text
+a = 0
+b = 0
+```
+
+You can also initialize them:
+
+```go
+var a, b int = 10, 20
+```
+
+Now:
+
+```text
+a = 10
+b = 20
+```
+
+---
+
+## Multiple variables with `:=`
+
+You can also write:
+
+```go
+x, y := 10, 20
+```
+
+This creates two variables:
+
+```text
+x = 10
+y = 20
+```
+
+You can even have different types:
+
+```go
+name, age := "Saket", 40
+```
+
+Now:
+
+```text
+name → string
+age  → int
+```
+
+---
+
+# 2.6.1 Multiple Assignment
+
+Go supports multiple assignment.
+
+For example:
+
+```go
+x, y = 10, 20
+```
+
+This assigns:
+
+```text
+x = 10
+y = 20
+```
+
+This becomes particularly useful when swapping variables.
+
+---
+
+# 2.7 Reassignment
+
+Once a variable exists, you can change its value.
+
+Example:
+
+```go
+age := 40
+
+age = 41
+```
+
+Initially:
+
+```text
+age = 40
+```
+
+After:
+
+```text
+age = 41
+```
+
+we have:
+
+```text
+age = 41
+```
+
+You **do not** use `:=` for ordinary reassignment.
+
+Correct:
+
+```go
+age := 40
+age = 41
+```
+
+Incorrect:
+
+```go
+age := 40
+age := 41
+```
+
+---
+
+# 2.7.1 Reassignment Does Not Change the Type
+
+This is important.
+
+Suppose:
+
+```go
+age := 40
+```
+
+`age` is an `int`.
+
+You can do:
+
+```go
+age = 41
+```
+
+But you cannot do:
+
+```go
+age = "Saket"
+```
+
+because `"Saket"` is a string.
+
+Go is **statically typed**.
+
+The variable remains an `int`.
+
+---
+
+# 2.7.2 A Useful Mental Model
+
+Consider:
+
+```go
+age := 40
+```
+
+You can think:
+
+```text
+Variable:
+    name = age
+    type = int
+    value = 40
 ```
 
 Then:
 
-```bash
-./hello
+```go
+age = 41
 ```
 
-executes the compiled program.
+changes:
+
+```text
+Variable:
+    name = age
+    type = int
+    value = 41
+```
+
+The **value changes**, but the **type does not**.
 
 ---
 
-# 4. `go run` vs `go build`
-This distinction is worth memorizing.
+# Exercises
 
-| Command | Main purpose |
-| --- | --- |
-| `go run` | Build and immediately run |
-| `go build` | Build executable |
-| `go test` | Build and run tests |
-| `go fmt` | Format packages |
-| `go mod` | Work with modules |
-| `go get` | Add/update module dependencies |
-| `go install` | Build and install executable/package |
+Now let's make these practical.
 
-Conceptually:
+## Exercise 1 — Create Variables
+
+Create variables for:
 
 ```text
-go run
-    ↓
-build + execute
+name
+age
+salary
+city
 ```
 
-while:
+Use appropriate Go types.
+
+For example, you might start with:
+
+```go
+name := ...
+age := ...
+salary := ...
+city := ...
+```
+
+Don't copy a solution—try choosing the values and types yourself.
+
+---
+
+## Exercise 2 — Print Them
+
+Create the four variables and print them.
+
+Expected kind of output:
 
 ```text
-go build
-    ↓
-build
+Name: Saket
+Age: 40
+Salary: 100000
+City: Pune
+```
+
+Hint:
+
+```go
+fmt.Println("Name:", name)
 ```
 
 ---
 
-# 5. The `go` Command vs the Go Compiler
-This distinction is extremely important.
+## Exercise 3 — Change Their Values
 
-When you type:
+Start with:
 
-```bash
-go build
+```go
+age := 40
+city := "Pune"
 ```
 
-the `go` command is **not itself the compiler**.
+Then change them to different values using **assignment**, not `:=`.
 
-Think of:
+For example:
 
-```text
-             go
-             │
-       Go command/tool
-             │
-       ┌─────┼─────┐
-       │     │     │
-       ↓     ↓     ↓
-    build   test   fmt
-       │
-       ↓
-   compiler
-       │
-       ↓
-    linker
+```go
+age = ...
+city = ...
 ```
-
-The `go` command is a **tool that orchestrates the Go development process**.
-
-It knows how to:
-
-- find packages
-- understand modules
-- determine dependencies
-- invoke the compiler
-- invoke the linker
-- run tests
-- format code
-- manage modules
-- install programs
-- inspect the Go environment
-
-So:
-
-```bash
-go
-```
-
-is more like the **front door to the Go toolchain**.
 
 ---
 
-# 6. What Is the Go Toolchain?
-The **Go toolchain** is the collection of programs and supporting components used to develop and build Go software.
+## Exercise 4 — Sum of Three Integers
 
-It includes things such as:
+Create three integer variables:
 
-```text
-go command
-compiler
-linker
-formatter
-test infrastructure
-documentation tools
-module tooling
-other development tools
+```go
+a := ...
+b := ...
+c := ...
 ```
 
-You interact with much of this through:
+Calculate their sum.
 
-```bash
-go ...
+For example:
+
+```go
+sum := a + b + c
+```
+
+Print the result.
+
+---
+
+## Exercise 5 — Swap Two Variables
+
+Given:
+
+```go
+a := 10
+b := 20
+```
+
+After the swap, you should have:
+
+```text
+a = 20
+b = 10
+```
+
+Try to do this using Go's multiple assignment feature.
+
+**Hint:**
+
+```go
+a, b = ...
+```
+
+---
+
+# Exercise 6 — Which Declarations Compile?
+
+For each example, determine whether it is valid Go.
+
+### A
+
+```go
+var age int
+```
+
+### B
+
+```go
+var age = 40
+```
+
+### C
+
+```go
+age := 40
+```
+
+### D
+
+```go
+age = 40
+```
+
+### E
+
+```go
+age := 40
+age = 41
+```
+
+### F
+
+```go
+age := 40
+age := 41
+```
+
+### G
+
+```go
+var age int = 40
+age = 41
+```
+
+### H
+
+```go
+var age int = "40"
+```
+
+Try to classify each as:
+
+```text
+COMPILES
+```
+
+or
+
+```text
+DOES NOT COMPILE
+```
+
+and explain why.
+
+---
+
+# Debugging Exercise
+
+Given:
+
+```go
+name := "Saket"
+name := "Gupta"
+```
+
+This does **not** compile.
+
+The reason is that `:=` is a **short variable declaration**.
+
+The first line creates:
+
+```text
+name → string → "Saket"
+```
+
+The second line tries to declare `name` again in the same scope:
+
+```go
+name := "Gupta"
+```
+
+But `name` already exists.
+
+If your intention is to **change the value**, use `=`:
+
+```go
+name := "Saket"
+name = "Gupta"
+```
+
+Now:
+
+```go
+name = "Gupta"
+```
+
+---
+
+# Important Rules to Remember
+
+Keep these rules in your notes:
+
+```text
+1. var can declare a variable.
+
+2. A variable can be declared without an initial value:
+       var age int
+
+3. Go gives variables their type's zero value.
+
+4. You can declare and initialize together:
+       var age int = 40
+
+5. Go can infer the type:
+       var age = 40
+
+6. := declares and initializes a new variable:
+       age := 40
+
+7. = assigns a new value to an existing variable:
+       age = 41
+
+8. := cannot normally be used to simply reassign an
+   existing variable:
+       age := 40
+       age := 41   ❌
+
+9. Variables have a fixed type:
+       age := 40
+       age = "Saket"   ❌
+
+10. Go supports multiple variables:
+       x, y := 10, 20
+
+11. Go supports multiple assignment:
+       x, y = 20, 10
+```
+
+### The most important distinction
+
+If you remember only one thing from this chapter, remember:
+
+```text
+:=   → create a new variable
+=    → assign/change the value of an existing variable
 ```
 
 For example:
 
-```bash
-go build
-go test
-go fmt
-go mod
-go env
-go list
-go doc
-```
-
----
-
-# 7. `go` — The Main Command
-Run:
-
-```bash
-go help
-```
-
-You will see many commands.
-
-Some important ones are:
-
-```text
-build
-clean
-doc
-env
-fmt
-generate
-get
-install
-list
-mod
-run
-test
-tool
-version
-```
-
-Think of:
-
-```bash
-go
-```
-
-as a command dispatcher.
-
-For example:
-
-```bash
-go build
-```
-
-means:
-
-> Ask the Go tool to perform a build.
-And:
-
-```bash
-go test
-```
-
-means:
-
-> Ask the Go tool to test the package.
-
----
-
-# 8. `gofmt`
-`gofmt` is the standard Go source-code formatter.
-
-For example, suppose you write ugly formatting:
-
 ```go
-package main
-import "fmt"
-func main(){fmt.Println("Hello")}
+age := 40   // create
+age = 41    // change
 ```
 
-Run:
-
-```bash
-gofmt -w main.go
-```
-
-and Go will format it into the standard style:
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-    fmt.Println("Hello")
-}
-```
-
-This is a major Go philosophy:
-
-> Formatting should be automated rather than debated.
+This distinction will become **very important later**, especially when we start working with functions, scopes, packages, and more complex Go programs.
 
 ---
 
