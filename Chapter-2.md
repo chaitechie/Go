@@ -780,6 +780,186 @@ The variable remains an `int`.
 
 ---
 
+## Static Typing in Go
+
+A **statically typed language** is a programming language where the **type of a variable is known and checked before the program runs**, usually during compilation.
+
+Since you're learning Go, let's understand it using Go.
+
+### 1. Example in Go
+
+```go
+var age int = 40
+```
+
+Here:
+
+- `age` → variable
+- `int` → type
+- `40` → value
+
+Go knows that:
+
+> `age` can contain an `int`.
+
+So this is valid:
+
+```go
+age = 50
+```
+
+But this is invalid:
+
+```go
+age = "Saket"
+```
+
+Go will catch this **before the program runs**:
+
+```text
+cannot use "Saket" (untyped string constant) as int value
+```
+
+That's the **static typing** part.
+
+---
+
+### 2. Why is it called "static"?
+
+Think of the type as being **fixed/known ahead of execution**.
+
+```go
+var age int
+```
+
+The compiler knows:
+
+```text
+age → int
+```
+
+before your program starts running.
+
+So when it sees:
+
+```go
+age = "hello"
+```
+
+the compiler can immediately say:
+
+> ❌ This is wrong. `age` is an `int`, but you're trying to put a `string` into it.
+
+---
+
+### 3. Compare with a dynamically typed language
+
+For example, JavaScript:
+
+```javascript
+let age = 40;
+age = "Saket";
+```
+
+This is allowed.
+
+The same variable can now contain:
+
+```text
+age → 40
+```
+
+and later:
+
+```text
+age → "Saket"
+```
+
+The type is determined/checked more dynamically while the program executes.
+
+So, broadly:
+
+| Language | Typing | Variable type |
+| --- | --- | --- |
+| Go | Static | Known at compile time |
+| JavaScript | Dynamic | Determined at runtime |
+
+`age = 40` is valid in both languages. However, after `age` is declared as an `int` in Go, `age = "Saket"` is invalid, while it is valid in JavaScript.
+
+---
+
+### 4. Important: Static typing ≠ explicit typing
+
+This is important in Go.
+
+You don't always have to explicitly write the type:
+
+```go
+var age = 40
+```
+
+Go **infers** that:
+
+```text
+age → int
+```
+
+So this is still statically typed.
+
+The compiler effectively determines:
+
+```go
+var age int = 40
+```
+
+from:
+
+```go
+var age = 40
+```
+
+Similarly:
+
+```go
+name := "Saket"
+```
+
+Go knows:
+
+```text
+name → string
+```
+
+and you cannot later do:
+
+```go
+name = 100
+```
+
+---
+
+### 5. The easiest definition to remember
+
+> **Statically typed language:** The compiler knows and checks the types of variables before the program runs.
+
+For Go:
+
+```go
+age := 40
+```
+
+means Go determines:
+
+```text
+age → int
+```
+
+and that type doesn't change during the lifetime of that variable.
+
+This is one of the reasons Go can catch many programming mistakes **before you run your program**.
+
+---
+
 # 2.7.2 A Useful Mental Model
 
 Consider:
