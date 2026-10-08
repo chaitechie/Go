@@ -1,2096 +1,2431 @@
-Absolutely. This is a **very important topic**, especially because you're learning Go and will soon work with HTTP, JSON, databases, Linux, Kafka, etc. Unicode and encoding appear everywhere in backend development.
+# Chapter 3 — Data Types in Go
 
-The key is to build the mental model from the bottom up:
+## 3.1 What Is a Data Type?
 
-**Character → Unicode code point → encoding → bytes → storage/transmission → decoding → character**
-
-I'll explain it from the computer's perspective, including what happens **inside memory**, **inside files**, and **between two computers over a network**.
-
-### The roadmap
-
-1. What is a character?
-2. Why computers need character encoding
-3. ASCII
-4. The problem with ASCII
-5. Unicode
-6. Unicode code points
-7. Characters vs code points vs glyphs
-8. UTF-8, UTF-16, UTF-32
-9. How UTF-8 actually converts characters to bytes
-10. What happens inside computer memory
-11. What happens when you save a text file
-12. What happens when two computers communicate
-13. HTTP and UTF-8
-14. JSON and Unicode
-15. Unicode in Go — `string`, `byte`, `rune`
-16. Common encoding mistakes
-17. Lots of hands-on exercises
-
----
-
-# 1. First: What is a character?
-Suppose I write:
-
-```
-A
-```
-
-You see the letter **A**.
-
-Or:
-
-```
-नमस्ते
-```
-
-You see Hindi characters.
-
-Or:
-
-```
-你好
-```
-
-You see Chinese characters.
-
-Or:
-
-```
-😀
-```
-
-You see an emoji.
-
-To a human, these are characters/symbols.
-
-But a computer does **not** fundamentally understand:
-
-```
-A
-न
-你
-😀
-```
-
-as visual symbols.
-
-At the lowest level, computers work with **bits**:
-
-```
-0
-1
-```
-
-and groups of bits called bytes:
-
-```
-01000001
-```
-
-So we need a system that answers:
-
-> How do we represent a human character using numbers and ultimately bits?
-That's where **character encoding** comes in.
-
----
-
-# 2. The first important distinction
-There are actually several different concepts that people often mix together.
-
-Consider:
-
-```
-A
-```
-
-There are at least four different things we can talk about:
-
-### Character
-The abstract thing:
-
-```
-A
-```
-
-### Unicode code point
-Unicode assigns a number to that character:
-
-```
-U+0041
-```
-
-### Encoding
-An encoding tells us how to represent that code point as bytes.
-
-For UTF-8:
-
-```
-U+0041
-      ↓
-01000001
-```
-
-which is hexadecimal:
-
-```
-41
-```
-
-### Glyph
-The actual shape drawn on your screen:
-
-```
-A
-```
-
-The font determines what that shape looks like.
-
-So:
-
-```
-Character
-   ↓
-Unicode code point
-   ↓
-Encoding
-   ↓
-Bytes
-   ↓
-Storage / transmission
-   ↓
-Decoding
-   ↓
-Unicode code point
-   ↓
-Font rendering
-   ↓
-Glyph on screen
-```
-
-This distinction is **fundamental**.
-
----
-
-# 3. Before Unicode: ASCII
-Let's go back to the beginning.
-
-One of the most important early character encoding systems was:
-
-**ASCII**
-
-ASCII stands for:
-
-> American Standard Code for Information Interchange
-
-ASCII originally uses **7 bits**.
-
-That gives:
-
-```
-2⁷ = 128
-```
-
-possible values.
-
-So ASCII can represent values:
-
-```
-0 – 127
-```
+A **data type** tells Go what kind of value a variable can hold.
 
 For example:
 
-```
-A = 65
-B = 66
-C = 67
-...
-Z = 90
-```
-
-In hexadecimal:
-
-```
-A = 0x41
-B = 0x42
-C = 0x43
+```go
+var age int = 40
+var name string = "Saket"
+var salary float64 = 125000.50
+var isActive bool = true
 ```
 
-And binary:
+Here:
 
-```
-A = 01000001
-```
+| Variable | Type | Value |
+| --- | --- | --- |
+| `age` | `int` | `40` |
+| `name` | `string` | `"Saket"` |
+| `salary` | `float64` | `125000.50` |
+| `isActive` | `bool` | `true` |
 
----
+The type is important because Go needs to know:
 
-# 4. Why does `A` become 65?
-There isn't some physical law saying:
-
-```
-A = 65
-```
-
-Humans **defined a mapping**.
-
-ASCII essentially says:
-
-```
-65 → A
-66 → B
-67 → C
-```
-
-and so on.
-
-This is a **character encoding table**.
-
-You can imagine it as:
-
-```
-Number Character
-65     A
-66     B
-67     C
-68     D
-97     a
-98     b
-99     c
-```
-
-So if a computer receives:
-
-```
-65
-```
-
-and interprets it as ASCII, it knows:
-
-```
-65 → A
-```
-
----
-
-# 5. What does the computer actually store?
-Suppose you have:
-
-```
-ABC
-```
-
-ASCII says:
-
-```
-A = 65
-B = 66
-C = 67
-```
-
-In hexadecimal:
-
-```
-41 42 43
-```
-
-In binary:
-
-```
-01000001 01000010 01000011
-```
-
-So the file can contain:
-
-```
-01000001 01000010 01000011
-```
-
-The computer doesn't literally store "A B C".
-
-It stores electrical/magnetic/electronic states representing bits.
-
-Conceptually:
-
-```
-A
-↓
-65
-↓
-01000001
-```
-
----
-
-# 6. The problem with ASCII
-ASCII was designed primarily for English.
-
-It handles:
-
-```
-A-Z
-a-z
-0-9
-punctuation
-control characters
-```
-
-But what about:
-
-```
-é
-अ
-क
-中
-Ж
-ع
-😀
-```
-
-ASCII has no entries for these.
+1. What kind of value is stored
+2. How much memory is required
+3. What operations are allowed
+4. How the value should be interpreted
 
 For example:
 
-```
-अ
-```
-
-cannot be represented using standard ASCII.
-
-As computers became international, this became a huge problem.
-
-Different countries created different character encodings.
-
-For example, there were encodings designed for:
-
-- Western European languages
-- Cyrillic
-- Arabic
-- Japanese
-- Chinese
-- Korean
-- Indian scripts
-
-This created another huge problem.
-
----
-
-# 7. The encoding mess
-Imagine computer A stores:
-
-```
-é
-```
-
-using one encoding.
-
-Computer B receives the bytes and interprets them using another encoding.
-
-Computer A might send:
-
-```
-C3 A9
-```
-
-but computer B might interpret those bytes using another character encoding.
-
-The result could be:
-
-```
-Ã©
-```
-
-or:
-
-```
-�
-```
-
-or some completely different character.
-
-This is the basic reason **encoding mismatches** cause garbled text.
-
----
-
-# 8. Enter Unicode
-Unicode was created to solve this problem.
-
-The basic idea is:
-
-> Give every character a universal number.
-
-Instead of every country inventing its own incompatible numbering system, Unicode provides a common system.
-
-For example:
-
-```
-A  → U+0041
-B  → U+0042
-C  → U+0043
-```
-
-Hindi:
-
-```
-अ → U+0905
-आ → U+0906
-```
-
-Chinese:
-
-```
-你 → U+4F60
-好 → U+597D
-```
-
-Emoji:
-
-```
-😀 → U+1F600
-```
-
-These numbers are called **Unicode code points**.
-
----
-
-# 9. What does `U+0041` mean?
-This notation:
-
-```
-U+0041
+```go
+var age int = 40
 ```
 
 means:
 
-```
-Unicode code point 0x0041
-```
+> `age` can contain an integer value.
 
-The `U+` is just notation.
+You cannot simply put a string into it:
 
-The number itself is hexadecimal.
-
-So:
-
-```
-U+0041
+```go
+age = "forty"
 ```
 
-means hexadecimal:
+This produces a compile-time error.
 
-```
-41
+---
+
+## 3.2 Go Is Statically Typed
+
+Go is a **statically typed language**.
+
+This means the type of a variable is known at compile time.
+
+```go
+var age int = 40
 ```
 
-which is decimal:
+Go knows:
 
-```
-65
+```text
+age → int
 ```
 
 Therefore:
 
+```go
+age = 50
 ```
-A
-↓
-Unicode code point
-↓
-U+0041
-↓
-decimal 65
+
+is valid.
+
+But:
+
+```go
+age = "hello"
 ```
+
+is invalid.
+
+Go catches this before the program runs.
+
+This is one of the major differences between Go and dynamically typed languages such as JavaScript.
 
 ---
 
-# 10. Unicode is NOT an encoding
-This is one of the most important things to understand.
+## 3.3 Go's Basic Built-in Types
 
-People often say:
+Some of the most important built-in types are:
 
-> "Unicode encoding"
+```text
+bool
 
-but technically we need to distinguish:
-
-**Unicode** defines the character/code-point system.
-
-**UTF-8 / UTF-16 / UTF-32** are encoding schemes for representing Unicode code points.
-
-Think of it like this:
-
-```
-UNICODE
-   │
-   ├── U+0041 → A
-   ├── U+0905 → अ
-   ├── U+4F60 → 你
-   └── U+1F600 → 😀
-```
-
-Then an encoding determines how these numbers become bytes:
-
-```
-Unicode code point
-        │
-        ├── UTF-8
-        ├── UTF-16
-        └── UTF-32
-```
-
----
-
-# 11. UTF-8
-UTF-8 is by far the most important encoding for modern software.
-
-You'll encounter it constantly in:
-
-- Go
-- Linux
-- HTTP
-- JSON
-- HTML
-- APIs
-- databases
-- source code
-- configuration files
-- Git
-- web browsers
-
-UTF means:
-
-> Unicode Transformation Format
-
-UTF-8 means the UTF encoding whose fundamental unit is 8 bits (one byte), with a variable number of bytes per Unicode code point.
-
-UTF-8 uses:
-
-```
-1 to 4 bytes
-```
-
-for a Unicode code point.
-
-For example:
-
-```
-A
-```
-
-uses:
-
-```
-1 byte
-```
-
-while:
-
-```
-अ
-```
-
-uses:
-
-```
-3 bytes
-```
-
-and:
-
-```
-😀
-```
-
-uses:
-
-```
-4 bytes
-```
-
----
-
-# 12. Why is UTF-8 variable length?
-Because it was designed to be compatible with ASCII.
-
-For ASCII characters:
-
-```
-A
-B
-C
-...
-```
-
-UTF-8 uses exactly the same byte values as ASCII.
-
-For example:
-
-```
-A
-↓
-U+0041
-↓
-UTF-8
-↓
-41
-```
-
-That's extremely useful.
-
-A huge amount of existing software that understands ASCII can continue working with UTF-8 for ASCII text.
-
----
-
-# 13. UTF-8 example
-Let's examine:
-
-```
-A
-```
-
-Unicode:
-
-```
-U+0041
-```
-
-UTF-8:
-
-```
-41
-```
-
-Binary:
-
-```
-01000001
-```
-
-So:
-
-```
-A
- ↓
-U+0041
- ↓
-UTF-8
- ↓
-0x41
- ↓
-01000001
-```
-
----
-
-# 14. Now let's look at `अ`
-The Unicode code point is:
-
-```
-अ = U+0905
-```
-
-Unlike `A`, it cannot fit into one UTF-8 byte.
-
-UTF-8 encodes it as:
-
-```
-E0 A4 85
-```
-
-So:
-
-```
-अ
-↓
-U+0905
-↓
-UTF-8
-↓
-E0 A4 85
-```
-
-That's **3 bytes**.
-
----
-
-# 15. And an emoji
-Take:
-
-```
-😀
-```
-
-Unicode:
-
-```
-U+1F600
-```
-
-UTF-8:
-
-```
-F0 9F 98 80
-```
-
-So:
-
-```
-😀
- ↓
-U+1F600
- ↓
-UTF-8
- ↓
-F0 9F 98 80
-```
-
-That's **4 bytes**.
-
----
-
-## The code point for `अ`
-
-Yes — for **`अ`**, the Unicode code point is:
-
-```
-U+0905
-```
-
-`0905` is normally written in **hexadecimal**.
-
-Its decimal equivalent is:
-
-```
-0x0905 = 2309
-```
-
-So:
-
-```
-Character:       अ
-Unicode code point: U+0905
-Hexadecimal:     0905
-Decimal:         2309
-```
-
-### Does Unicode assign decimal or hexadecimal?
-**Neither, strictly speaking.**
-
-Unicode assigns each character a **code point** — essentially a number.
-
-That number can be **written in different number systems**, just like any other number.
-
-For example, the code point for `अ` is the number:
-
-```
-2309  (decimal)
-```
-
-The same number written in hexadecimal is:
-
-```
-0905  (hexadecimal)
-```
-
-Unicode documentation conventionally writes code points in **hexadecimal**, with `U+`:
-
-```
-U+0905
-```
-
-So when you see:
-
-```
-U+0905
-```
-
-you should read it as:
-
-> Unicode code point **0905 in hexadecimal**
-
-### Why hexadecimal?
-Because Unicode code points can be quite large, and hexadecimal is much more compact.
-
-For example:
-
-```
-Decimal       Hexadecimal
-65            U+0041       → A
-97            U+0061       → a
-2309          U+0905       → अ
-128512        U+1F600      → 😀
-```
-
-### And this is where UTF-8 enters
-This is the important distinction:
-
-**Unicode** assigns the character a code point:
-
-```
-अ
-↓
-U+0905
-```
-
-**UTF-8** tells the computer how to represent that code point as bytes:
-
-```
-U+0905
-   ↓ UTF-8 encoding
-E0 A4 85
-```
-
-So:
-
-```
-                 UNICODE
-              "What character?"
-                    ↓
-                   अ
-                    ↓
-                 U+0905
-                    ↓
-              code point 2309
-                    │
-                    │ UTF-8 encoding
-                    ↓
-             E0 A4 85
-                    ↓
-          224 164 133 bytes
-```
-
-This distinction between **character → Unicode code point → encoding → bytes** is the key to understanding how computers actually store and transmit text.
-
----
-
-# 16. This gives us a very important picture
-Suppose your text is:
-
-```
-Aअ😀
-```
-
-Conceptually:
-
-```
-Characters:
-
-A       अ       😀
-
- ↓       ↓       ↓
-
-Unicode:
-
-U+0041  U+0905  U+1F600
-
- ↓       ↓       ↓
-
-UTF-8:
-
-41      E0 A4 85      F0 9F 98 80
-
- ↓       ↓       ↓
-
-Bytes:
-
-41 E0 A4 85 F0 9F 98 80
-```
-
-Notice something extremely important:
-
-The number of **characters** is:
-
-```
-3
-```
-
-but the number of **bytes** is:
-
-```
-1 + 3 + 4 = 8
-```
-
-Therefore:
-
-> Character count and byte count are not necessarily the same.
-
-This becomes extremely important in Go.
-
----
-
-# 17. What actually happens inside a computer?
-Let's imagine you type:
-
-```
-A
-```
-
-on your keyboard.
-
-Very simplified, the chain is:
-
-```
-Keyboard
-   ↓
-Operating system
-   ↓
-Character/code point
-   ↓
-Application
-   ↓
-Memory
-```
-
-The keyboard itself doesn't necessarily send "Unicode character A" in the simple conceptual sense. Modern input systems involve keyboard events, layouts, input methods, and OS-level text processing.
-
-Eventually the application receives text information.
-
-Suppose the application wants to store:
-
-```
-A
-```
-
-using UTF-8.
-
-It gets:
-
-```
-U+0041
-```
-
-and UTF-8 encoding produces:
-
-```
-41
-```
-
-The program can now store that byte in memory.
-
----
-
-# 18. Memory contains bytes, not letters
-This is a very important computer concept.
-
-Suppose Go has:
-
-```
-s := "ABC"
-```
-
-Conceptually, UTF-8 representation is:
-
-```
-41 42 43
-```
-
-Memory contains bits.
-
-You can think:
-
-```
-Address       Value
-
-0x1000        41
-0x1001        42
-0x1002        43
-```
-
-The CPU doesn't inherently know:
-
-```
-41 = A
-42 = B
-43 = C
-```
-
-Those bytes only become text when some software interprets them according to an encoding.
-
----
-
-# 19. A byte has no inherent character meaning
-This is another **very important principle**.
-
-Consider:
-
-```
-0x41
-```
-
-As a raw byte, it is simply:
-
-```
-65 decimal
-```
-
-It could represent:
-
-```
-A
-```
-
-under ASCII/UTF-8.
-
-But it could also be:
-
-```
-65
-```
-
-as an integer.
-
-Or part of an image.
-
-Or part of a machine instruction.
-
-Or part of a network packet.
-
-The byte itself doesn't say:
-
-> "I am the letter A."
-
-The **context and interpretation** give it meaning.
-
----
-
-# 20. Saving a text file
-Suppose you create:
-
-```
-hello.txt
-```
-
-with:
-
-```
-Hello
-```
-
-Your editor may use UTF-8.
-
-The characters are:
-
-```
-H e l l o
-```
-
-Unicode code points:
-
-```
-U+0048
-U+0065
-U+006C
-U+006C
-U+006F
-```
-
-UTF-8 bytes:
-
-```
-48 65 6C 6C 6F
-```
-
-The file system stores those bytes.
-
-So the file essentially contains:
-
-```
-48 65 6C 6C 6F
-```
-
-The operating system doesn't need to store a magical "letter H object."
-
-It's bytes.
-
----
-
-# 21. Now save Hindi
-Suppose:
-
-```
-नमस्ते
-```
-
-is saved as UTF-8.
-
-The characters/code points are encoded into multiple bytes.
-
-The file contains bytes, something like:
-
-```
-E0 A4 A8 ...
-```
-
-The exact sequence depends on the Unicode code points involved, and importantly, **visible characters in Indic scripts may involve multiple Unicode code points**, not necessarily one code point per displayed character.
-
-This is where Unicode gets much deeper.
-
----
-
-# 22. Code point is not necessarily a visible character
-This is a subtle but extremely important concept.
-
-Consider:
-
-```
-é
-```
-
-It can sometimes be represented as one Unicode code point:
-
-```
-U+00E9
-```
-
-But Unicode also allows it to be represented as:
-
-```
-e + combining acute accent
-```
-
-which is:
-
-```
-U+0065
-U+0301
-```
-
-Visually:
-
-```
-é
-```
-
-But internally:
-
-```
-e
-+
-◌́
-```
-
-So:
-
-```
-1 visible character
-```
-
-can correspond to:
-
-```
-2 Unicode code points
-```
-
-And therefore potentially more bytes.
-
----
-
-# 23. Even "character" is complicated
-Unicode terminology becomes important here.
-
-We can have:
-
-### Byte
-A unit of 8 bits:
-
-```
-10101010
-```
-
-### Unicode code point
-A number:
-
-```
-U+0041
-```
-
-### Grapheme cluster
-What a user perceives as one character.
-
-For example, some displayed symbols may be composed of multiple code points.
-
-### Glyph
-The actual visual shape rendered by a font.
-
-These are different concepts.
-
-A useful mental model:
-
-```
-Bytes
-  ↓ decode
-Unicode code points
-  ↓ combine / text shaping
-Grapheme clusters
-  ↓ render with font
-Glyphs
-  ↓
-Pixels on screen
-```
-
----
-
-# 24. What happens when you open a UTF-8 file?
-Suppose a file contains:
-
-```
-E0 A4 85
-```
-
-The text editor needs to know:
-
-> What encoding are these bytes using?
-
-If it knows:
-
-```
-UTF-8
-```
-
-it decodes:
-
-```
-E0 A4 85
-       ↓
-    U+0905
-       ↓
-      अ
-```
-
-Then the text rendering system uses a font to display:
-
-```
-अ
-```
-
-on your screen.
-
-So:
-
-```
-File bytes
-    ↓
-UTF-8 decoder
-    ↓
-Unicode code point
-    ↓
-Font/text shaping
-    ↓
-Pixels
-```
-
----
-
-# 25. What if the encoding is wrong?
-Suppose the file contains UTF-8:
-
-```
-C3 A9
-```
-
-which represents:
-
-```
-é
-```
-
-But a program incorrectly interprets those bytes using another encoding.
-
-You might see:
-
-```
-Ã©
-```
-
-This phenomenon is often called **mojibake**.
-
-The underlying bytes aren't necessarily damaged.
-
-The interpretation is wrong.
-
-That's an extremely useful way to think about encoding problems:
-
-> Many text corruption problems are actually **interpretation problems**, not byte corruption.
-
----
-
-# 26. Communication between two computers
-Now let's get to your question about **between computers**.
-
-Suppose:
-
-```
-Computer A
-```
-
-wants to send:
-
-```
-Hello 😀
-```
-
-to:
-
-```
-Computer B
-```
-
-Assume the application uses UTF-8.
-
-The process is roughly:
-
-```
-Computer A
-
-Text
-"Hello 😀"
-     ↓
-Unicode representation
-     ↓
-UTF-8 encoding
-     ↓
-Bytes
-     ↓
-Network protocol
-     ↓
-Network
-     ↓
-Computer B
-     ↓
-Bytes
-     ↓
-UTF-8 decoding
-     ↓
-Unicode text
-"Hello 😀"
-```
-
----
-
-# 27. The network does not send "characters"
-This is critical.
-
-The network doesn't fundamentally send:
-
-```
-😀
-```
-
-as a visual character.
-
-It sends **bits/bytes**.
-
-For example, part of the data might contain:
-
-```
-F0 9F 98 80
-```
-
-Those are the UTF-8 bytes for:
-
-```
-😀
-```
-
-The receiving application must know that these bytes are UTF-8 encoded text.
-
----
-
-# 28. Example: HTTP
-Imagine a server responds:
-
-```
-HTTP/1.1 200 OK
-Content-Type: text/plain; charset=utf-8
-
-Hello 😀
-```
-
-The important part is:
-
-```
-charset=utf-8
-```
-
-It tells the receiver:
-
-> Interpret the text bytes as UTF-8.
-
-Conceptually:
-
-```
-Server
-   |
-   | UTF-8 bytes
-   |
-   ↓
-Internet
-   |
-   ↓
-Browser
-   |
-   | UTF-8 decode
-   ↓
-Unicode text
-   |
-   ↓
-Rendering
-   |
-   ↓
-😀 on screen
-```
-
----
-
-# 29. JSON
-You'll encounter this constantly in backend development.
-
-Suppose your Go server sends:
-
-```
-{
-  "name": "Saket",
-  "city": "Pune"
-}
-```
-
-JSON text is normally exchanged as UTF-8 in modern web/API usage.
-
-For:
-
-```
-Saket
-```
-
-The bytes correspond directly to ASCII/UTF-8.
-
-For:
-
-```
-{
-  "name": "साकेत"
-}
-```
-
-The UTF-8 bytes are multibyte.
-
-Your Go application doesn't need to manually calculate those bytes in normal usage.
-
-The JSON library handles the encoding/decoding.
-
----
-
-# 30. UTF-16 and UTF-32
-UTF-8 isn't the only Unicode encoding.
-
-There are three major Unicode transformation formats:
-
-```
-UTF-8
-UTF-16
-UTF-32
-```
-
-### UTF-8
-Uses:
-
-```
-1–4 bytes
-```
-
-per code point.
-
-Very common on the web, Linux, Go, APIs, files.
-
-### UTF-16
-Uses:
-
-```
-2 or 4 bytes
-```
-
-for a Unicode code point.
-
-Historically important in Windows and some programming environments.
-
-### UTF-32
-Uses:
-
-```
-4 bytes
-```
-
-per Unicode code point.
-
-Very straightforward, but consumes more memory.
-
----
-
-# 31. Why is UTF-8 so popular?
-Consider English:
-
-```
-Hello World
-```
-
-Every character is one byte.
-
-So:
-
-```
-Hello World
-```
-
-uses:
-
-```
-11 bytes
-```
-
-under UTF-8.
-
-That's efficient.
-
-But Unicode can still represent:
-
-```
-अ
-你
-😀
-```
-
-using multiple bytes.
-
-So UTF-8 gives us:
-
-**ASCII compatibility + complete Unicode coverage + reasonable storage efficiency.**
-
----
-
-# 32. UTF-8 encoding structure
-Here's something worth learning properly.
-
-UTF-8 uses different bit patterns depending on the code point.
-
-### 1-byte sequence
-For ASCII:
-
-```
-0xxxxxxx
-```
-
-Range:
-
-```
-U+0000 – U+007F
-```
-
-### 2-byte sequence
-
-```
-110xxxxx 10xxxxxx
-```
-
-### 3-byte sequence
-
-```
-1110xxxx 10xxxxxx 10xxxxxx
-```
-
-### 4-byte sequence
-
-```
-11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-```
-
-The `10` pattern in continuation bytes helps the decoder identify UTF-8 structure.
-
----
-
-# 33. Why those strange prefixes?
-Consider:
-
-```
-1110xxxx 10xxxxxx 10xxxxxx
-```
-
-The decoder can recognize:
-
-```
-1110
-```
-
-as:
-
-> This is the beginning of a 3-byte UTF-8 sequence.
-
-Then:
-
-```
-10
-```
-
-means:
-
-> This is a continuation byte.
-
-This makes UTF-8 **self-synchronizing** to an important degree: byte patterns help distinguish the beginning and continuation of encoded code points.
-
----
-
-# 34. Example: `€`
-The Euro sign:
-
-```
-€
-```
-
-Unicode:
-
-```
-U+20AC
-```
-
-UTF-8:
-
-```
-E2 82 AC
-```
-
-So:
-
-```
-€
- ↓
-U+20AC
- ↓
-UTF-8
- ↓
-E2 82 AC
-```
-
-Three bytes.
-
----
-
-# 35. The complete journey
-Let's put everything together.
-
-Suppose you type:
-
-```
-😀
-```
-
-### Step 1 — User input
-You select/type:
-
-```
-😀
-```
-
-### Step 2 — Unicode
-The application represents it using Unicode:
-
-```
-U+1F600
-```
-
-### Step 3 — Encoding
-Suppose UTF-8 is being used:
-
-```
-U+1F600
-↓
-F0 9F 98 80
-```
-
-### Step 4 — Memory
-Those bytes exist in memory.
-
-### Step 5 — Storage/network
-They can be:
-
-```
-written to a file
-```
-
-or:
-
-```
-sent through TCP
-```
-
-or:
-
-```
-stored in a database
-```
-
-or:
-
-```
-sent in an HTTP response
-```
-
-### Step 6 — Receiver
-The receiver obtains:
-
-```
-F0 9F 98 80
-```
-
-### Step 7 — Decode
-UTF-8 decoder:
-
-```
-F0 9F 98 80
-↓
-U+1F600
-```
-
-### Step 8 — Text rendering
-The operating system/application finds an appropriate glyph from a font.
-
-### Step 9 — Screen
-Your display ultimately shows:
-
-```
-😀
-```
-
----
-
-# 36. Where does the font come in?
-This is another common misconception.
-
-Unicode does **not** contain pictures of characters.
-
-Unicode says:
-
-```
-U+0041 = LATIN CAPITAL LETTER A
-```
-
-It does not say:
-
-> Draw this exact shape.
-
-The font determines the visual appearance.
-
-For example:
-
-```
-A
-```
-
-could look like:
-
-```
-A
-```
-
-or:
-
-```
-𝔄
-```
-
-or another typographic form.
-
-Same underlying text concept/code point, different glyph/font presentation.
-
----
-
-# 37. A very useful layered model
-I recommend memorizing this model:
-
-```
-                    HUMAN TEXT
-                        │
-                        ▼
-                Unicode code points
-                        │
-                        ▼
-                   Encoding
-              ┌─────────┼─────────┐
-              │         │         │
-            UTF-8     UTF-16    UTF-32
-              │
-              ▼
-             BYTES
-              │
-       ┌──────┼─────────┐
-       │      │         │
-     Memory  File     Network
-                       │
-                       ▼
-                     Bytes
-                       │
-                       ▼
-                    Decode
-                       │
-                       ▼
-               Unicode code points
-                       │
-                       ▼
-                Text shaping
-                       │
-                       ▼
-                     Glyphs
-                       │
-                       ▼
-                    Pixels
-```
-
-This is the mental model I want you to have before we go deeper.
-
----
-
-# 38. Why this matters in Go
-This topic directly connects to something you'll encounter soon:
-
-```
 string
+
+int
+int8
+int16
+int32
+int64
+
+uint
+uint8
+uint16
+uint32
+uint64
+uintptr
+
+float32
+float64
+
+complex64
+complex128
+
 byte
 rune
 ```
+
+We will study these carefully.
+
+---
+
+## 3.4 The `int` Type
+
+`int` represents an integer.
+
+Examples:
+
+```go
+var age int = 40
+var count int = 100
+var temperature int = -10
+```
+
+Integers can be:
+
+- positive
+- negative
+- zero
+
+Examples:
+
+```text
+10
+-10
+0
+500
+-250
+```
+
+---
+
+## 3.5 Why Does Go Have `int8`, `int16`, `int32`, `int64`?
+
+Go provides integers of different sizes.
+
+```text
+int8
+int16
+int32
+int64
+```
+
+The number represents the number of **bits**.
 
 For example:
 
-```
-s := "A"
-```
-
-and:
-
-```
-s := "अ"
+```go
+var a int8 = 100
+var b int16 = 1000
+var c int32 = 100000
+var d int64 = 10000000000
 ```
 
-may look like each contains one character.
+The ranges are:
 
-But in UTF-8:
+| Type | Size | Minimum | Maximum |
+| --- | --- | --- | --- |
+| `int8` | 8 bits | -128 | 127 |
+| `int16` | 16 bits | -32,768 | 32,767 |
+| `int32` | 32 bits | -2^31 | 2^31 - 1 |
+| `int64` | 64 bits | -2^63 | 2^63 - 1 |
 
+---
+
+## 3.6 `int` Is Special
+
+`int` does not have a fixed size across all architectures.
+
+It is either:
+
+```text
+32 bits
 ```
-"A" → 1 byte
-"अ" → 3 bytes
+
+or:
+
+```text
+64 bits
 ```
 
-Go therefore makes an important distinction between:
+On modern 64-bit systems, including your Apple Silicon Mac, `int` is normally 64 bits.
 
+You can verify this:
+
+```go
+package main
+
+import (
+    "fmt"
+    "strconv"
+)
+
+func main() {
+    fmt.Println(strconv.IntSize)
+}
 ```
+
+You should see:
+
+```text
+64
+```
+
+`int` is generally the type you should use for ordinary integer calculations.
+
+For example:
+
+```go
+var age int = 40
+var count int = 100
+```
+
+You normally don't need to use `int64` unless the size matters.
+
+---
+
+## 3.7 Signed Integers
+
+The types:
+
+```text
+int
+int8
+int16
+int32
+int64
+```
+
+are **signed integers**.
+
+Signed means they can represent both positive and negative values.
+
+For example:
+
+```go
+var temperature int = -5
+```
+
+is valid.
+
+---
+
+## 3.8 Unsigned Integers
+
+Go also provides:
+
+```text
+uint
+uint8
+uint16
+uint32
+uint64
+```
+
+Unsigned integers cannot represent negative values.
+
+For example:
+
+```go
+var age uint = 40
+```
+
+is valid.
+
+But:
+
+```go
+var age uint = -1
+```
+
+is invalid.
+
+The ranges are:
+
+| Type | Range |
+| --- | --- |
+| `uint8` | 0 → 255 |
+| `uint16` | 0 → 65,535 |
+| `uint32` | 0 → 2^32 - 1 |
+| `uint64` | 0 → 2^64 - 1 |
+
+---
+
+just like int, uint does not have a fixed size across all architectures.
+
+It is either:
+
+```text
+32 bits
+```
+
+or:
+
+```text
+64 bits
+```
+
+On modern 64-bit systems, including your Apple Silicon Mac, `uint` is normally 64 bits.
+
+## 3.9 `uint8` and `byte`
+
+Go provides an alias:
+
+```go
 byte
 ```
 
-and:
+for:
 
-```
-rune
-```
-
-A Go `byte` is an alias for:
-
-```
+```go
 uint8
 ```
 
-while a Go `rune` is an alias for:
+Therefore:
 
+```go
+var b byte = 65
 ```
+
+is equivalent to:
+
+```go
+var b uint8 = 65
+```
+
+You will frequently encounter `byte` when working with:
+
+- files
+- network data
+- binary data
+- strings
+- HTTP
+- JSON
+- encryption
+
+For example:
+
+```go
+data := []byte("hello")
+```
+
+Don't worry too much about `[]byte` yet. We will study slices later.
+
+---
+
+## 3.10 `rune`
+
+Go also provides:
+
+```go
+rune
+```
+
+which is an alias for:
+
+```go
 int32
 ```
 
-and is conventionally used for a Unicode code point.
+A `rune` represents a Unicode code point.
 
-This is why:
+For example:
 
+```go
+var r rune = 'A'
 ```
-len("A")
+
+You can also use Unicode:
+
+```go
+var r rune = 'अ'
+```
+
+or:
+
+```go
+var r rune = '😊'
+```
+
+Notice something important.
+
+A character literal uses **single quotes**:
+
+```go
+'A'
+```
+
+while a string uses **double quotes**:
+
+```go
+"A"
+```
+
+These are different.
+
+```go
+var r rune = 'A'
+var s string = "A"
+```
+
+---
+
+## 3.11 Unicode
+
+Go has excellent Unicode support.
+
+For example:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Hello")
+    fmt.Println("नमस्ते")
+    fmt.Println("こんにちは")
+    fmt.Println("你好")
+    fmt.Println("😊")
+}
+```
+
+All of these are valid strings.
+
+Unicode becomes particularly important when working with:
+
+```text
+string
+rune
+UTF-8
+```
+
+We will study this more deeply in the Strings & Runes chapter.
+
+---
+
+## 3.12 Floating-Point Numbers
+
+Go provides:
+
+```text
+float32
+float64
+```
+
+These are used for numbers containing fractional values.
+
+For example:
+
+```go
+var price float64 = 99.99
+var temperature float64 = 36.5
+var percentage float64 = 98.75
+```
+
+---
+
+## 3.13 `float32`
+
+Example:
+
+```go
+var price float32 = 99.99
+```
+
+`float32` uses 32 bits.
+
+It provides approximately:
+
+```text
+7 decimal digits of precision
+```
+
+---
+
+## 3.14 `float64`
+
+Example:
+
+```go
+var price float64 = 99.99
+```
+
+`float64` uses 64 bits.
+
+It provides approximately:
+
+```text
+15–16 decimal digits of precision
+```
+
+For most general-purpose calculations, Go programmers normally prefer:
+
+```text
+float64
+```
+
+rather than:
+
+```text
+float32
+```
+
+unless memory or an API specifically requires `float32`.
+
+---
+
+## 3.15 Floating-Point Precision
+
+This is important.
+
+Consider:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    var x float64 = 0.1
+    var y float64 = 0.2
+
+    fmt.Println(x + y)
+}
+```
+
+You might expect:
+
+```text
+0.3
+```
+
+but floating-point representation can produce something like:
+
+```text
+0.30000000000000004
+```
+
+This is not a Go bug.
+
+It is a consequence of how floating-point numbers are represented in binary.
+
+Therefore, don't blindly use `float64` for things such as financial calculations where exact decimal representation is important.
+
+---
+
+## 3.16 Boolean Type
+
+Go has:
+
+```go
+bool
+```
+
+A Boolean has only two possible values:
+
+```text
+true
+false
+```
+
+Example:
+
+```go
+var isLoggedIn bool = true
+var isAdmin bool = false
+```
+
+Booleans are heavily used with conditions:
+
+```go
+if isLoggedIn {
+    fmt.Println("Welcome")
+}
+```
+
+---
+
+## 3.17 Strings
+
+Go's string type is:
+
+```go
+string
+```
+
+Example:
+
+```go
+var name string = "Saket"
+```
+
+Strings can contain:
+
+- letters
+- numbers
+- spaces
+- symbols
+- Unicode
+
+Example:
+
+```go
+var message string = "Hello, Go!"
+```
+
+---
+
+## 3.18 Empty String
+
+A string can be empty:
+
+```go
+var name string = ""
+```
+
+This is called the **zero value** of `string`.
+
+More on zero values shortly.
+
+---
+
+## 3.19 String Literals
+
+Double quotes:
+
+```go
+"Hello"
+```
+
+are commonly used for strings.
+
+Example:
+
+```go
+message := "Hello World"
+```
+
+Go also supports raw string literals using backticks:
+
+```go
+message := `Hello
+World`
+```
+
+This is particularly useful when you want to preserve formatting.
+
+---
+
+## 3.20 The Zero Value
+
+This is one of the most important concepts in Go.
+
+When you declare a variable without giving it an initial value, Go automatically assigns its **zero value**.
+
+Example:
+
+```go
+var age int
+```
+
+What is `age`?
+
+```text
+0
+```
+
+Similarly:
+
+```go
+var price float64
+```
+
+gets:
+
+```text
+0
+```
+
+And:
+
+```go
+var active bool
+```
+
+gets:
+
+```text
+false
+```
+
+And:
+
+```go
+var name string
+```
+
+gets:
+
+```text
+""
+```
+
+---
+
+## 3.21 Zero Values Table
+
+| Type | Zero Value |
+| --- | --- |
+| `int` | `0` |
+| `int8` | `0` |
+| `int16` | `0` |
+| `int32` | `0` |
+| `int64` | `0` |
+| `uint` | `0` |
+| `float32` | `0` |
+| `float64` | `0` |
+| `bool` | `false` |
+| `string` | `""` |
+
+This is an important Go philosophy:
+
+> Variables are always initialized to a meaningful zero value.
+
+---
+
+## 3.22 Type Inference
+
+Go can determine the type automatically.
+
+Instead of:
+
+```go
+var age int = 40
+```
+
+you can write:
+
+```go
+var age = 40
+```
+
+Go determines:
+
+```text
+age → int
+```
+
+Similarly:
+
+```go
+var name = "Saket"
+```
+
+becomes:
+
+```text
+name → string
+```
+
+And:
+
+```go
+var price = 99.99
+```
+
+becomes:
+
+```text
+price → float64
+```
+
+---
+
+## 3.23 Short Variable Declaration
+
+Inside functions, you can use:
+
+```go
+age := 40
+```
+
+This is equivalent to:
+
+```go
+var age int = 40
+```
+
+Go determines the type automatically.
+
+Example:
+
+```go
+name := "Saket"
+age := 40
+salary := 100000.50
+active := true
+```
+
+The inferred types are:
+
+```text
+name   → string
+age    → int
+salary → float64
+active → bool
+```
+
+---
+
+## 3.24 Type Is Part of the Variable
+
+Consider:
+
+```go
+age := 40
+```
+
+`age` becomes an `int`.
+
+You cannot later change its type:
+
+```go
+age = "forty"
+```
+
+This is invalid.
+
+The variable remains an `int` throughout its lifetime.
+
+You can change its **value**:
+
+```go
+age = 41
+```
+
+but not its **type**.
+
+---
+
+## 3.25 Go Does Not Automatically Mix Numeric Types
+
+Consider:
+
+```go
+var age int = 40
+var salary float64 = 50000.50
+```
+
+This is not automatically valid:
+
+```go
+result := age + salary
+```
+
+Why?
+
+Because:
+
+```text
+age    → int
+salary → float64
+```
+
+They are different types.
+
+You must explicitly convert.
+
+```go
+result := float64(age) + salary
+```
+
+Now both operands are `float64`.
+
+---
+
+## 3.26 Type Conversion
+
+Go provides explicit type conversion.
+
+Example:
+
+```go
+var age int = 40
+
+var x float64 = float64(age)
+```
+
+Now:
+
+```text
+age → int
+x   → float64
+```
+
+Another example:
+
+```go
+var price float64 = 99.99
+
+var value int = int(price)
+```
+
+The fractional part is removed.
+
+So:
+
+```text
+99.99 → 99
+```
+
+Be careful: this is not rounding.
+
+---
+
+## 3.27 Conversion vs Casting
+
+You will often hear programmers say "type casting."
+
+In Go, the more accurate terminology is:
+
+> **type conversion**
+
+For example:
+
+```go
+float64(age)
+```
+
+is a type conversion.
+
+---
+
+## 3.28 Integer Overflow
+
+Every integer type has a maximum value.
+
+For example:
+
+```go
+int8
+```
+
+can hold:
+
+```text
+-128 to 127
+```
+
+Therefore:
+
+```go
+var x int8 = 127
+```
+
+is valid.
+
+But adding one can cause overflow in situations where the operation is permitted at runtime:
+
+```go
+x++
+```
+
+The value wraps according to the integer representation.
+
+You should understand the limits of fixed-width integer types before using them.
+
+---
+
+## 3.29 `uintptr`
+
+Go also has:
+
+```go
+uintptr
+```
+
+It is an unsigned integer type large enough to hold a pointer value.
+
+You generally **should not use `uintptr` for normal application programming**.
+
+It is mainly relevant to:
+
+- low-level programming
+- unsafe operations
+- system interfaces
+- interoperability
+
+We will not use it in normal Go development for now.
+
+---
+
+## 3.30 `complex64` and `complex128`
+
+Go supports complex numbers.
+
+```go
+var x complex64
+var y complex128
+```
+
+Example:
+
+```go
+var z complex128 = 3 + 4i
+```
+
+You can use:
+
+```go
+real(z)
+imag(z)
+```
+
+Example:
+
+```go
+fmt.Println(real(z))
+fmt.Println(imag(z))
+```
+
+Output:
+
+```text
+3
+4
+```
+
+These types are uncommon in normal backend development, but they are part of Go's built-in numeric types.
+
+---
+
+## 3.31 `byte` vs `rune`
+
+This distinction is very important.
+
+```text
+byte → uint8
+rune → int32
+```
+
+`byte` is commonly used for raw bytes.
+
+`rune` is commonly used for Unicode code points.
+
+For example:
+
+```go
+var b byte = 65
+var r rune = 'A'
+```
+
+Both represent something related to `A`, but conceptually they are different.
+
+---
+
+## 3.32 Inspecting a Variable's Type
+
+The `fmt` package can help you inspect types.
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    age := 40
+    name := "Saket"
+    price := 99.99
+    active := true
+
+    fmt.Printf("%T\n", age)
+    fmt.Printf("%T\n", name)
+    fmt.Printf("%T\n", price)
+    fmt.Printf("%T\n", active)
+}
+```
+
+Output:
+
+```text
+int
+string
+float64
+bool
+```
+
+`%T` means:
+
+> print the type of the value.
+
+---
+
+## 3.33 `%v` vs `%T`
+
+These are useful when debugging.
+
+```go
+fmt.Printf("%v\n", age)
+```
+
+prints the value.
+
+```go
+fmt.Printf("%T\n", age)
+```
+
+prints the type.
+
+Example:
+
+```go
+fmt.Printf("Value: %v\n", age)
+fmt.Printf("Type: %T\n", age)
+```
+
+Output:
+
+```text
+Value: 40
+Type: int
+```
+
+---
+
+## 3.34 `int` vs `int64`
+
+A common beginner question is:
+
+> Should I always use `int64`?
+
+No.
+
+For normal application code:
+
+```go
+age := 40
+count := 100
+```
+
+is perfectly normal.
+
+Use a specific type such as:
+
+```go
+int64
+```
+
+when the domain or API requires that specific representation.
+
+This becomes particularly relevant when working with:
+
+- databases
+- timestamps
+- binary protocols
+- external APIs
+- large numeric values
+
+---
+
+## 3.35 A Complete Example
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    var name string = "Saket"
+    var age int = 40
+    var salary float64 = 125000.50
+    var experience int = 17
+    var active bool = true
+
+    fmt.Println("Name:", name)
+    fmt.Println("Age:", age)
+    fmt.Println("Salary:", salary)
+    fmt.Println("Experience:", experience)
+    fmt.Println("Active:", active)
+}
+```
+
+---
+
+# Exercises
+
+## Exercise 1 — Basic Variables
+
+Create a program with these variables:
+
+```text
+name
+age
+salary
+isEmployed
+```
+
+Choose appropriate data types.
+
+Print all four values.
+
+---
+
+## Exercise 2 — Identify the Types
+
+Without running the program, determine the type of each variable:
+
+```go
+a := 10
+b := 10.5
+c := "10"
+d := true
+e := 'A'
+```
+
+Write:
+
+```text
+a → ?
+b → ?
+c → ?
+d → ?
+e → ?
+```
+
+Then verify using `%T`.
+
+---
+
+## Exercise 3 — Zero Values
+
+Write a program:
+
+```go
+var age int
+var price float64
+var active bool
+var name string
+```
+
+Print all four.
+
+Before running it, predict:
+
+```text
+age    → ?
+price  → ?
+active → ?
+name   → ?
+```
+
+Then verify.
+
+---
+
+## Exercise 4 — Integer Types
+
+Create variables of each type:
+
+```text
+int8
+int16
+int32
+int64
+uint8
+uint16
+uint32
+uint64
+```
+
+Assign an appropriate value to each.
+
+Print their values and types.
+
+Use:
+
+```go
+fmt.Printf("%T %v\n", variable, variable)
+```
+
+---
+
+## Exercise 5 — Find the Limits
+
+Create an `int8` variable:
+
+```go
+var x int8 = 127
+```
+
+Print it.
+
+Then experiment with:
+
+```go
+x++
+```
+
+Observe what happens.
+
+Now try similar experiments with:
+
+```go
+uint8
+int16
+```
+
+Record your observations.
+
+---
+
+## Exercise 6 — Type Conversion
+
+Create:
+
+```go
+age := 40
+```
+
+Convert it to:
+
+```go
+float64
+```
+
+and store the result in another variable.
+
+Print:
+
+```text
+original value
+original type
+converted value
+converted type
+```
+
+---
+
+## Exercise 7 — Floating Point to Integer
+
+Create:
+
+```go
+price := 99.99
+```
+
+Convert it to `int`.
+
+Print both values.
+
+Answer:
+
+> Did Go round the number or truncate it?
+
+---
+
+## Exercise 8 — Mixed Numeric Calculation
+
+Create:
+
+```go
+age := 40
+height := 5.9
+```
+
+Calculate:
+
+```go
+age + height
+```
+
+You will discover that Go doesn't automatically combine `int` and `float64`.
+
+Fix the program using explicit conversion.
+
+---
+
+## Exercise 9 — Boolean Logic
+
+Create:
+
+```go
+isLoggedIn := true
+isAdmin := false
+```
+
+Print:
+
+```text
+Is logged in?
+Is admin?
+```
+
+Then create:
+
+```go
+canAccess := ...
+```
+
+where access is allowed only when the user is logged in **and** is an admin.
+
+---
+
+## Exercise 10 — `byte`
+
+Create:
+
+```go
+var b byte = 65
+```
+
+Print:
+
+```go
+fmt.Println(b)
+```
+
+Then investigate how to print it as a character.
+
+Try:
+
+```go
+fmt.Printf("%c\n", b)
+```
+
+What do you get?
+
+---
+
+## Exercise 11 — `rune`
+
+Create:
+
+```go
+var r rune = 'A'
+```
+
+Print:
+
+```text
+value
+type
+```
+
+Then try:
+
+```go
+var r rune = 'अ'
 ```
 
 and:
 
-```
-len("अ")
+```go
+var r rune = '😊'
 ```
 
-don't necessarily give the same result you'd expect if you think `len` means "number of human-visible characters."
-
-We'll explore this very carefully when we reach **Strings & Runes** in your Go course.
+Observe the values.
 
 ---
 
-# 39. The most important distinctions to remember
-If you remember only these, you're already in good shape:
+## Exercise 12 — `byte` vs `rune`
 
-### 1. Character
-A human/text concept.
+Create:
 
-```
-A
-अ
-😀
+```go
+var b byte = 'A'
+var r rune = 'A'
 ```
 
-### 2. Unicode code point
-A number assigned by Unicode.
+Print:
 
-```
-A   → U+0041
-अ   → U+0905
-😀  → U+1F600
+```go
+fmt.Printf("%T %v\n", b, b)
+fmt.Printf("%T %v\n", r, r)
 ```
 
-### 3. Encoding
-A method of converting Unicode code points into bytes.
-
-```
-UTF-8
-UTF-16
-UTF-32
-```
-
-### 4. Byte
-8 bits.
-
-```
-01000001
-```
-
-### 5. File/network
-Ultimately carries bytes.
-
-### 6. Decoding
-Converts bytes back into Unicode code points.
-
-### 7. Font/glyph
-Determines how those characters are visually rendered.
+Explain the difference.
 
 ---
 
-# 40. One final example
-Take:
+## Exercise 13 — Unicode
 
-```
-Hello 😀 नमस्ते
-```
+Create a program that prints:
 
-A human sees:
-
-```
-Hello 😀 नमस्ते
+```text
+Your name
+A Hindi word
+A Japanese word
+An emoji
 ```
 
-But the computer/network can see something conceptually like:
+For example:
 
-```
-Unicode code points
-        ↓
-U+0048
-U+0065
-U+006C
-U+006C
-U+006F
-U+0020
-U+1F600
-U+0020
-...
-        ↓
-UTF-8 encoding
-        ↓
-48 65 6C 6C 6F 20 F0 9F 98 80 20 ...
-        ↓
-bytes
-        ↓
-file / memory / TCP / HTTP / database
+```text
+Saket
+नमस्ते
+こんにちは
+😊
 ```
 
-And the receiving side reverses the process:
-
-```
-bytes
- ↓
-UTF-8 decoder
- ↓
-Unicode code points
- ↓
-text shaping
- ↓
-font
- ↓
-GIFs
- ↓
-pixels
-```
-
-That's the fundamental story of **text in computers**.
+Then investigate the type of a string variable containing these values.
 
 ---
 
-## Where I suggest we go next
-Since you want to understand this **in detail rather than just memorize definitions**, I'd recommend we continue this as a mini-course:
+## Exercise 14 — String Length
 
-**Part 1 — Foundations**
+Create:
 
-- Bits and bytes
-- ASCII
-- Character sets vs encodings
-- Unicode
-- Code points
-- Unicode planes
-- BMP
-- Surrogate concepts
+```go
+name := "Saket"
+```
 
-**Part 2 — UTF-8 deeply**
+Use:
 
-- Exact UTF-8 algorithm
-- Converting `U+20AC → E2 82 AC` manually
-- Why UTF-8 uses 1/2/3/4 bytes
-- Valid/invalid UTF-8
-- Continuation bytes
-- Byte-order issues
+```go
+len(name)
+```
 
-**Part 3 — Characters are more complicated than code points**
+Print the result.
 
-- Combining marks
-- Grapheme clusters
-- Emoji sequences
-- Zero-width joiner
-- Variation selectors
-- Indic scripts such as Hindi
-- Why "one character = one byte" and even "one character = one code point" are both wrong assumptions
+Then try:
 
-**Part 4 — Inside the computer**
+```go
+name := "नमस्ते"
+```
 
-- RAM representation
-- CPU and bytes
-- filesystems
-- editors
-- fonts
-- rendering
-- OS text APIs
+Compare the result.
 
-**Part 5 — Between computers**
+**Important:** Don't immediately assume `len(string)` means "number of human-readable characters." Investigate what it actually counts.
 
-- TCP/IP
-- HTTP
-- `Content-Type`
-- `charset=utf-8`
-- JSON
-- databases
-- Kafka
-- APIs
-- what happens when sender and receiver use different encodings
+---
 
-**Part 6 — Go**
+## Exercise 15 — Type Inspection
 
-- `string`
-- `byte`
-- `rune`
-- UTF-8 strings
-- `len`
-- indexing
-- ranging over strings
-- `utf8.RuneCountInString`
-- converting between bytes/runes/strings
-- practical exercises
+Create variables:
 
-That would give you a **real understanding of Unicode rather than just knowing that UTF-8 exists**.
+```go
+name := "Saket"
+age := 40
+height := 5.9
+active := true
+letter := 'A'
+```
+
+Print their:
+
+```text
+value
+type
+```
+
+using `%v` and `%T`.
+
+---
+
+## Exercise 16 — Predict Before Running
+
+What do you think this program prints?
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    var a int = 10
+    var b int = 20
+
+    fmt.Println(a + b)
+}
+```
+
+Then change it to:
+
+```go
+var a int = 10
+var b float64 = 20
+```
+
+What happens?
+
+Why?
+
+---
+
+## Exercise 17 — Variable Type Cannot Change
+
+Start with:
+
+```go
+age := 40
+```
+
+Try:
+
+```go
+age = 41
+```
+
+Then try:
+
+```go
+age = "forty"
+```
+
+Observe the compiler error.
+
+Explain:
+
+> Why can the value change but the type cannot?
+
+---
+
+## Exercise 18 — Build an Employee
+
+Create these variables:
+
+```text
+name
+age
+salary
+experience
+isManager
+```
+
+Choose appropriate types.
+
+Print a nicely formatted employee profile.
+
+Example:
+
+```text
+Name: Saket
+Age: 40
+Salary: 125000
+Experience: 17
+Manager: true
+```
+
+---
+
+## Exercise 19 — Salary Calculation
+
+Create:
+
+```go
+salary := 100000.0
+bonus := 15000.0
+```
+
+Calculate:
+
+```text
+totalSalary
+```
+
+Then calculate:
+
+```text
+tax = 10% of totalSalary
+```
+
+Finally calculate:
+
+```text
+netSalary
+```
+
+Print all values.
+
+---
+
+## Exercise 20 — Temperature Conversion
+
+Create:
+
+```go
+celsius := 30.0
+```
+
+Convert it to Fahrenheit.
+
+Formula:
+
+```text
+F = C × 9/5 + 32
+```
+
+Print:
+
+```text
+Celsius
+Fahrenheit
+```
+
+---
+
+## Exercise 21 — Area of a Circle
+
+Create:
+
+```go
+radius := 5.0
+```
+
+Calculate:
+
+```text
+area = π × radius × radius
+```
+
+Use:
+
+```go
+math.Pi
+```
+
+You will need:
+
+```go
+import "math"
+```
+
+---
+
+## Exercise 22 — Data Type Investigation
+
+Write a program that prints the type of:
+
+```text
+10
+10.0
+"10"
+true
+'A'
+```
+
+Use `%T`.
+
+Try to predict all five before running.
+
+---
+
+## Exercise 23 — Conversion Chain
+
+Start with:
+
+```go
+var a int = 100
+```
+
+Convert:
+
+```text
+int → float64
+float64 → int
+```
+
+Print the value and type after every conversion.
+
+---
+
+## Exercise 24 — Large Numbers
+
+Create variables for:
+
+```text
+population
+distance
+bankBalance
+```
+
+Choose appropriate types.
+
+Think carefully:
+
+> Should each one be `int`, `int64`, or `float64`?
+
+There isn't necessarily one universal answer. Explain your choices.
+
+---
+
+## Exercise 25 — Debugging Challenge
+
+This program doesn't compile:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    var age int = 40
+    var salary float64 = 50000.50
+
+    total := age + salary
+
+    fmt.Println(total)
+}
+```
+
+Fix it.
+
+Then explain exactly **why** the original program failed.
+
+---
+
+## Exercise 26 — Debugging Challenge
+
+Find the problem:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    var age int
+    age = "40"
+
+    fmt.Println(age)
+}
+```
+
+Fix it in two different ways.
+
+---
+
+## Exercise 27 — Zero Value Challenge
+
+Write a program containing:
+
+```go
+var a int
+var b float64
+var c bool
+var d string
+```
+
+Without assigning values, calculate/print their zero values.
+
+Then answer:
+
+> Why doesn't Go leave these variables containing random garbage data?
+
+---
+
+## Exercise 28 — Type Conversion Challenge
+
+You have:
+
+```go
+age := 40
+height := 5.9
+```
+
+Create:
+
+```text
+ageAsFloat
+heightAsInt
+```
+
+Then calculate:
+
+```text
+result = ageAsFloat + height
+```
+
+and print the result.
+
+---
+
+## Exercise 29 — Mini Employee Calculator
+
+Create:
+
+```text
+employee name
+monthly salary
+months worked
+bonus
+```
+
+Calculate:
+
+```text
+annual salary
+total compensation
+```
+
+For example:
+
+```text
+annual salary = monthly salary × 12
+total compensation = annual salary + bonus
+```
+
+Print a complete report.
+
+---
+
+## Exercise 30 — Type Detective
+
+For every expression below, predict its type:
+
+```text
+10
+10.5
+"hello"
+true
+'A'
+10 + 20
+10.0 + 20.0
+"hello" + "world"
+```
+
+Then verify each one with `%T`.
+
+---
+
+## Exercise 31 — Challenge: `byte`
+
+Create:
+
+```go
+var a byte = 65
+var b byte = 66
+var c byte = 67
+```
+
+Print:
+
+```text
+65
+66
+67
+```
+
+Then print the corresponding characters.
+
+Try to figure out what relationship exists between:
+
+```text
+65 → ?
+66 → ?
+67 → ?
+```
+
+---
+
+## Exercise 32 — Challenge: Rune
+
+Create a program containing:
+
+```go
+r1 := 'A'
+r2 := 'अ'
+r3 := '😊'
+```
+
+Print:
+
+```text
+value
+type
+```
+
+for each.
+
+Then compare the numeric values.
+
+---
+
+## Exercise 33 — Mini Data Report
+
+Create a program representing a person:
+
+```text
+name
+age
+height
+weight
+isEmployed
+country
+```
+
+Print the person's information.
+
+Then print the type of every field.
+
+Example:
+
+```text
+Name: Saket
+Type: string
+
+Age: 40
+Type: int
+```
+
+---
+
+## Exercise 34 — No `:=` Allowed
+
+Write a program using only `var`.
+
+Do not use:
+
+```go
+:=
+```
+
+Create:
+
+```text
+name
+age
+salary
+active
+```
+
+Then rewrite the same program using `:=`.
+
+Compare the two approaches.
+
+---
+
+## Exercise 35 — No Explicit Types
+
+Now do the opposite.
+
+Do not explicitly write:
+
+```text
+int
+float64
+string
+bool
+```
+
+Use type inference wherever possible.
+
+For example:
+
+```go
+name := "Saket"
+```
+
+Then use `%T` to verify what Go inferred.
+
+---
+
+## Exercise 36 — Mixed Type Calculator
+
+Create:
+
+```go
+quantity := 10
+price := 99.50
+discount := 5.0
+```
+
+Calculate:
+
+```text
+subtotal
+discountAmount
+finalPrice
+```
+
+Be careful about the different types.
+
+---
+
+## Exercise 37 — Find the Bug
+
+What is wrong here?
+
+```go
+var age int = 40
+var name string = "Saket"
+
+fmt.Println(age + name)
+```
+
+Explain the problem rather than simply deleting the line.
+
+---
+
+## Exercise 38 — Predict the Output
+
+Before running:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    var a int
+    var b float64
+    var c bool
+    var d string
+
+    fmt.Printf("%v\n", a)
+    fmt.Printf("%v\n", b)
+    fmt.Printf("%v\n", c)
+    fmt.Printf("%q\n", d)
+}
+```
+
+Predict the output.
+
+Then run it.
+
+---
+
+## Exercise 39 — Challenge: Architecture
+
+Write a program that prints:
+
+```text
+Size of int
+```
+
+Use:
+
+```go
+strconv.IntSize
+```
+
+Then determine whether your machine is using:
+
+```text
+32-bit int
+```
+
+or:
+
+```text
+64-bit int
+```
+
+This connects back to Chapter 1's discussion of CPU architecture.
+
+---
+
+## Exercise 40 — Final Challenge
+
+Create a small program representing a bank account.
+
+Use appropriate data types for:
+
+```text
+account holder
+account number
+balance
+active
+number of transactions
+interest rate
+```
+
+Then calculate:
+
+```text
+interest earned
+new balance
+```
+
+Print:
+
+```text
+Account Holder
+Account Number
+Balance
+Interest Rate
+Interest Earned
+New Balance
+Active
+Transactions
+```
+
+For every variable, be prepared to explain:
+
+> **Why did you choose this particular data type?**
+
+---
+
+# 3.76 Final Conceptual Questions
+
+Before moving to Chapter 4, make sure you can answer these **without looking at the notes**.
+
+### Question 1
+What does a data type tell Go?
+
+### Question 2
+Is Go statically typed or dynamically typed?
+
+### Question 3
+What is the difference between:
+
+```go
+var age int
+```
+
+and:
+
+```go
+var age int = 40
+```
+
+### Question 4
+What is the zero value of:
+
+```text
+int
+float64
+bool
+string
+```
+
+### Question 5
+What is the difference between:
+
+```text
+int
+int8
+int16
+int32
+int64
+```
+
+### Question 6
+What is the difference between:
+
+```text
+uint
+int
+```
+
+### Question 7
+What is:
+
+```go
+byte
+```
+
+an alias for?
+
+### Question 8
+What is:
+
+```go
+rune
+```
+
+an alias for?
+
+### Question 9
+What is the difference between:
+
+```go
+'A'
+```
+
+and:
+
+```go
+"A"
+```
+
+### Question 10
+What is the difference between:
+
+```go
+int
+```
+
+and:
+
+```go
+int64
+```
+
+### Question 11
+Why doesn't this work?
+
+```go
+var age int = 40
+var salary float64 = 50000
+
+result := age + salary
+```
+
+### Question 12
+How do you fix it?
+
+### Question 13
+What does this do?
+
+```go
+float64(age)
+```
+
+### Question 14
+Is this rounding?
+
+```go
+int(99.99)
+```
+
+### Question 15
+What does `%T` do?
+
+### Question 16
+What does `%v` do?
+
+### Question 17
+What type does Go normally infer for:
+
+```go
+x := 10
+```
+
+### Question 18
+What type does Go normally infer for:
+
+```go
+x := 10.5
+```
+
+### Question 19
+Can a variable change its type after declaration?
+
+### Question 20
+Why does Go have both `byte` and `rune`?
+
+---
+
+## Chapter 3 — What You Should Be Able to Do
+
+By the end of this chapter, you should be comfortable with:
+
+```text
+✓ What a data type is
+✓ Static typing
+✓ int
+✓ int8/int16/int32/int64
+✓ uint types
+✓ float32
+✓ float64
+✓ bool
+✓ string
+✓ byte
+✓ rune
+✓ complex numbers (basic awareness)
+✓ uintptr (basic awareness)
+✓ Zero values
+✓ Type inference
+✓ :=
+✓ Explicit type conversion
+✓ Numeric type differences
+✓ Integer overflow
+✓ Floating-point precision
+✓ %T
+✓ %v
+✓ Unicode basics
+```
+
+### Recommended practice order
+
+Don't do all 40 exercises mechanically.
+
+I recommend:
+
+**Day 1**
+
+```text
+Exercise 1–15
+```
+
+Focus on understanding types.
+
+**Day 2**
+
+```text
+Exercise 16–30
+```
+
+Focus on conversion, zero values, and debugging.
+
+**Day 3**
+
+```text
+Exercise 31–40
+```
+
+Focus on `byte`, `rune`, numeric decisions, and real-world problems.
+
+Then try the **20 conceptual questions without looking at the chapter**.
+
+The most important goal is not memorizing the list of types. You should reach the point where, when you see a piece of data, you can naturally ask:
+
+> **"What type should this data have, and why?"**
+
+That decision-making ability will become especially important when we reach **Structs, JSON, PostgreSQL, APIs, and database types** later in your Go course.
