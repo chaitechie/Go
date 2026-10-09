@@ -799,3 +799,809 @@ During each iteration:
 
 For a map with three entries, the loop executes three times.
 
+## 10.8.2 Iterate over only the keys
+
+Suppose we have the following map:
+
+```go
+ages := map[string]int{
+    "Saket": 40,
+    "Rahul": 35,
+    "Amit":  30,
+}
+```
+
+Previously, we used two variables in the `range` loop:
+
+```go
+for name, age := range ages {
+    fmt.Println(name, age)
+}
+```
+
+But what if you only want to print employee names?
+
+You can use a single variable:
+
+```go
+for name := range ages {
+    fmt.Println(name)
+}
+```
+
+Possible output:
+
+```text
+Saket
+Rahul
+Amit
+```
+
+The order is not guaranteed.
+
+During each iteration, `name` receives one key from the map. Since the map has three entries, the loop executes three times.
+
+Important: When you use a single variable in a map `range` loop, Go gives you the key, not the value.
+
+For example:
+
+```go
+for name := range ages {
+    fmt.Println(name)
+}
+```
+
+This prints the names.
+
+It does not print the ages.
+
+## 10.8.3 Iterate over only the values
+
+Now suppose you want to print only the ages.
+
+You might try:
+
+```go
+for age := range ages {
+    fmt.Println(age)
+}
+```
+
+However, this does not print the ages. It prints the keys, and the code will fail to compile because the keys are strings but `age` is inferred as a string variable. The variable name does not change what `range` returns.
+
+To iterate over the values, use the blank identifier `_` for the key:
+
+```go
+for _, age := range ages {
+    fmt.Println(age)
+}
+```
+
+Possible output:
+
+```text
+40
+35
+30
+```
+
+Let's understand the syntax:
+
+```go
+for _, age := range ages
+```
+
+- `_` receives the key, which we deliberately ignore.
+- `age` receives the associated value.
+- `range ages` iterates over the map entries.
+
+The blank identifier tells Go that we don't need that result.
+
+### Practice
+
+Predict what this program prints:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    scores := map[string]int{
+        "Math":    90,
+        "Science": 85,
+        "English": 95,
+    }
+
+    for subject := range scores {
+        fmt.Println(subject)
+    }
+
+    fmt.Println("---")
+
+    for _, score := range scores {
+        fmt.Println(score)
+    }
+}
+```
+
+The first loop prints all three subject names. The second prints all three scores. Neither loop guarantees a particular order.
+
+## 10.8.4 Can you rely on map iteration order?
+
+No. Go does not guarantee a stable iteration order for maps.
+
+Consider:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    ages := map[string]int{
+        "Saket": 40,
+        "Rahul": 35,
+        "Amit":  30,
+    }
+
+    for name, age := range ages {
+        fmt.Println(name, age)
+    }
+}
+```
+
+One execution might print:
+
+```text
+Saket 40
+Rahul 35
+Amit 30
+```
+
+Another might print:
+
+```text
+Amit 30
+Saket 40
+Rahul 35
+```
+
+Both outputs are valid.
+
+Do not build program logic that assumes maps will be iterated alphabetically, in insertion order, or in the same order on every run.
+
+### What if you need alphabetical order?
+
+For example, suppose you're generating an employee report and want the names sorted alphabetically.
+
+You can collect the map keys into a slice and sort the slice.
+
+```go
+package main
+
+import (
+    "fmt"
+    "sort"
+)
+
+func main() {
+    ages := map[string]int{
+        "Saket": 40,
+        "Rahul": 35,
+        "Amit":  30,
+    }
+
+    names := make([]string, 0, len(ages))
+
+    for name := range ages {
+        names = append(names, name)
+    }
+
+    sort.Strings(names)
+
+    for _, name := range names {
+        fmt.Println(name, ages[name])
+    }
+}
+```
+
+Output:
+
+```text
+Amit 30
+Rahul 35
+Saket 40
+```
+
+Let's break this down.
+
+Step 1: Create a slice to hold the names.
+
+```go
+names := make([]string, 0, len(ages))
+```
+
+This creates an empty string slice with an initial capacity equal to the number of map entries.
+
+Step 2: Copy the keys into the slice.
+
+```go
+for name := range ages {
+    names = append(names, name)
+}
+```
+
+Now `names` contains all the map keys, but in no guaranteed order.
+
+Step 3: Sort the slice.
+
+```go
+sort.Strings(names)
+```
+
+This sorts the strings alphabetically.
+
+Step 4: Print each name and its corresponding age.
+
+```go
+for _, name := range names {
+    fmt.Println(name, ages[name])
+}
+```
+
+We iterate over the sorted slice and use each name to retrieve the corresponding value from the map.
+
+Notice that we sorted the slice, not the map itself. Go maps do not have a built-in sorting operation.
+
+# 10.9 Finding the Number of Entries
+
+Go provides the built-in `len()` function to determine the number of entries in a map.
+
+```go
+ages := map[string]int{
+    "Saket": 40,
+    "Rahul": 35,
+    "Amit":  30,
+}
+
+fmt.Println(len(ages))
+```
+
+Output:
+
+```text
+3
+```
+
+There are three key-value pairs in the map.
+
+Now let's delete an entry:
+
+```go
+delete(ages, "Rahul")
+
+fmt.Println(len(ages))
+```
+
+Output:
+
+```text
+2
+```
+
+The map now has two entries.
+
+## 10.9.1 Does `len()` count keys or values?
+
+It counts entries, meaning the number of key-value pairs.
+
+For example:
+
+```go
+products := map[string]int{
+    "Laptop":  10,
+    "Keyboard": 25,
+    "Mouse":    40,
+}
+```
+
+Then:
+
+```go
+fmt.Println(len(products))
+```
+
+Output:
+
+```text
+3
+```
+
+It does not count the total stock of all products. That would require iterating over the values and adding them.
+
+```go
+totalStock := 0
+
+for _, stock := range products {
+    totalStock += stock
+}
+
+fmt.Println(totalStock)
+```
+
+Output:
+
+```text
+75
+```
+
+Here, `len(products)` is `3`, but the total stock is `75`.
+
+## 10.9.2 What is the length of a nil map?
+
+Consider:
+
+```go
+var ages map[string]int
+
+fmt.Println(len(ages))
+```
+
+Output:
+
+```text
+0
+```
+
+A nil map contains no entries, so `len()` returns zero.
+
+This is safe even though you haven't initialized the map.
+
+# 10.10 Which Types Can Be Used as Map Keys?
+
+This is an important Go language rule.
+
+A map key must have a comparable type.
+
+In simple terms, Go must be able to compare two values of that type for equality.
+
+## 10.10.1 Valid map key types
+
+These are valid:
+
+```go
+map[string]int
+map[int]string
+map[bool]string
+map[float64]string
+map[[2]int]string
+```
+
+Let's look at each one.
+
+### String keys
+
+```go
+ages := map[string]int{
+    "Saket": 40,
+}
+```
+
+Strings can be compared using equality operators.
+
+```go
+fmt.Println("Saket" == "Saket")
+```
+
+Output:
+
+```text
+true
+```
+
+### Integer keys
+
+```go
+students := map[int]string{
+    101: "Rahul",
+    102: "Amit",
+}
+```
+
+Integer keys are valid because integers are comparable.
+
+### Boolean keys
+
+```go
+answers := map[bool]string{
+    true:  "Yes",
+    false: "No",
+}
+```
+
+Boolean keys are also valid.
+
+### Array keys
+
+Arrays can be map keys if their element type is comparable.
+
+```go
+locations := map[[2]int]string{
+    [2]int{10, 20}: "Point A",
+    [2]int{30, 40}: "Point B",
+}
+```
+
+Here, each key is an array containing two integers.
+
+This is valid because integer arrays of the same type and length are comparable.
+
+## 10.10.2 Invalid map key types
+
+You cannot use slices, maps, or functions as ordinary map key types.
+
+For example:
+
+```go
+// Invalid: slices are not comparable.
+m := map[[]int]string{}
+```
+
+The compiler rejects this.
+
+Similarly:
+
+```go
+// Invalid: maps are not comparable.
+m := map[map[string]int]string{}
+```
+
+And:
+
+```go
+// Invalid: functions are not comparable.
+m := map[func()]string{}
+```
+
+The reason is that these types do not support ordinary equality comparison between two values of the same type.
+
+For slices, you cannot write:
+
+```go
+a := []int{1, 2}
+b := []int{1, 2}
+
+// Invalid:
+// fmt.Println(a == b)
+```
+
+You can compare a slice to `nil`, but you cannot compare two slices using `==`.
+
+This is different from arrays:
+
+```go
+a := [2]int{1, 2}
+b := [2]int{1, 2}
+
+fmt.Println(a == b)
+```
+
+Output:
+
+```text
+true
+```
+
+That is why `[2]int` can be a map key while `[]int` cannot.
+
+### A note about floating-point keys
+
+Floating-point types are comparable and can be used as map keys. However, special values such as `NaN` behave unusually because `NaN != NaN`.
+
+For ordinary beginner exercises, strings and integers are usually the most straightforward choices.
+
+# 10.11 Maps with Structs
+
+Until now, we have used maps such as:
+
+```go
+ages := map[string]int{
+    "Saket": 40,
+}
+```
+
+But in real applications, an employee has more than an age.
+
+An employee might have:
+
+- An ID
+- A name
+- An age
+- A department
+- A salary
+
+How do we store all this information?
+
+We can define a struct and use it as the map's value type.
+
+## 10.11.1 Define an employee struct
+
+```go
+type Employee struct {
+    Name       string
+    Age        int
+    Department string
+    Salary     float64
+}
+```
+
+This struct represents one employee.
+
+For example:
+
+```go
+employee := Employee{
+    Name:       "Saket",
+    Age:        40,
+    Department: "Engineering",
+    Salary:     150000,
+}
+```
+
+Now we can create a map where the key is an employee ID and the value is an `Employee`.
+
+```go
+employees := map[string]Employee{
+    "E101": {
+        Name:       "Saket",
+        Age:        40,
+        Department: "Engineering",
+        Salary:     150000,
+    },
+    "E102": {
+        Name:       "Rahul",
+        Age:        35,
+        Department: "Finance",
+        Salary:     120000,
+    },
+}
+```
+
+Conceptually:
+
+Key
+
+Value
+
+`"E101"`
+
+Employee struct for Saket
+
+`"E102"`
+
+Employee struct for Rahul
+
+The map key uniquely identifies the employee within this map.
+
+## 10.11.2 Retrieve an employee
+
+```go
+employee := employees["E101"]
+
+fmt.Println(employee.Name)
+fmt.Println(employee.Age)
+fmt.Println(employee.Department)
+fmt.Println(employee.Salary)
+```
+
+Output:
+
+```text
+Saket
+40
+Engineering
+150000
+```
+
+First, Go looks up the employee ID. Then we access the fields of the resulting struct.
+
+## 10.11.3 Check whether the employee exists
+
+You should use the comma-ok pattern:
+
+```go
+employee, exists := employees["E101"]
+
+if exists {
+    fmt.Println("Name:", employee.Name)
+} else {
+    fmt.Println("Employee not found")
+}
+```
+
+This is preferable when the program needs to distinguish a missing employee from an existing employee whose fields contain zero values.
+
+For example, if you look up a nonexistent employee, the returned `Employee` value is the zero value of that struct, but `exists` will be `false`.
+
+## 10.11.4 Updating a struct stored in a map
+
+Here is a subtle rule that is very important.
+
+Suppose you try this:
+
+```go
+employees["E101"].Age = 41
+```
+
+This does not compile.
+
+Why?
+
+When you retrieve a struct value from a map, you receive a copy of that struct. The map index expression is not an addressable struct variable whose field you can directly modify.
+
+Instead, follow these steps.
+
+Step 1: Retrieve the struct.
+
+```go
+employee := employees["E101"]
+```
+
+Step 2: Modify the local copy.
+
+```go
+employee.Age = 41
+```
+
+Step 3: Assign the modified struct back to the map.
+
+```go
+employees["E101"] = employee
+```
+
+The complete code is:
+
+```go
+employee := employees["E101"]
+employee.Age = 41
+employees["E101"] = employee
+```
+
+Now the map contains the updated employee.
+
+### Why must we assign it back?
+
+Because the struct retrieved from the map is a value copy.
+
+Modifying the local variable does not automatically update the struct stored in the map. The final assignment replaces the map entry with the modified copy.
+
+## 10.11.5 Alternative: Store pointers to structs
+
+You can also declare a map that stores pointers:
+
+```go
+employees := make(map[string]*Employee)
+```
+
+Now each value is a pointer to an `Employee`.
+
+```go
+employees["E101"] = &Employee{
+    Name:       "Saket",
+    Age:        40,
+    Department: "Engineering",
+    Salary:     150000,
+}
+```
+
+You can modify the employee's age through the pointer:
+
+```go
+employees["E101"].Age = 41
+```
+
+Go automatically dereferences the pointer when accessing the field.
+
+This is useful when you deliberately want multiple parts of a program to share the same employee object. However, pointer-based maps require you to consider nil pointers and shared mutable state.
+
+For now, the value-based map is a good starting point.
+
+# 10.12 Are Maps Reference Types?
+
+You may hear people say that maps are reference types.
+
+This is a useful informal description, but let's understand the behavior more precisely.
+
+Consider:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    a := map[string]int{
+        "Saket": 40,
+    }
+
+    b := a
+
+    b["Saket"] = 41
+    b["Rahul"] = 35
+
+    fmt.Println(a)
+    fmt.Println(b)
+}
+```
+
+Output:
+
+```text
+map[Rahul:35 Saket:41]
+map[Rahul:35 Saket:41]
+```
+
+Why does modifying `b` also affect the map you access through `a`?
+
+When you assign one map value to another, Go does not copy every entry into a new independent map. Both variables refer to the same underlying map data.
+
+Conceptually:
+
+Variable `a`
+
+Variable `b`
+
+Same underlying map
+
+Saket → 41
+
+Rahul → 35
+
+The assignment:
+
+```go
+b := a
+```
+
+does not create a separate map containing independent copies of all entries.
+
+## 10.12.1 Passing a map to a function
+
+The same behavior occurs when passing a map to a function.
+
+```go
+package main
+
+import "fmt"
+
+func updateAge(ages map[string]int) {
+    ages["Saket"] = 41
+}
+
+func main() {
+    ages := map[string]int{
+        "Saket": 40,
+    }
+
+    updateAge(ages)
+
+    fmt.Println(ages["Saket"])
+}
+```
+
+Output:
+
+```text
+41
+```
+
+The map is shared by reference semantics, so the function updates the original map.
+
+This is one of the key behaviors to remember when writing Go programs with maps.
+
+The map is shared by reference semantics, so the function updates the original map.
+
+This is one of the key behaviors to remember when writing Go programs with maps.
+
+
