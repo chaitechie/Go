@@ -799,6 +799,3 @@ During each iteration:
 
 For a map with three entries, the loop executes three times.
 
-## 10.8.2 Iterate over only the keys
-
-You
