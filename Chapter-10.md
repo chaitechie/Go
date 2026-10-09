@@ -1600,8 +1600,682 @@ The map is shared by reference semantics, so the function updates the original m
 
 This is one of the key behaviors to remember when writing Go programs with maps.
 
-The map is shared by reference semantics, so the function updates the original map.
+## An important clarification about passing maps to functions
 
-This is one of the key behaviors to remember when writing Go programs with maps.
+In the previous example:
+
+```go
+func updateAge(ages map[string]int) {
+    ages["Saket"] = 41
+}
+```
+
+The function parameter `ages` receives a copy of the map value. Both the caller's variable and the parameter refer to the same underlying map.
+
+However, there is an important distinction: modifying the map's entries is different from assigning a new map to the function parameter.
+
+Consider this program:
+
+```go
+package main
+
+import "fmt"
+
+func replaceMap(ages map[string]int) {
+    ages = make(map[string]int)
+    ages["Rahul"] = 35
+}
+
+func main() {
+    ages := map[string]int{
+        "Saket": 40,
+    }
+
+    replaceMap(ages)
+
+    fmt.Println(ages)
+}
+```
+
+Output:
+
+```text
+map[Saket:40]
+```
+
+Why didn't the caller's map get replaced?
+
+1. Initially, the caller's `ages` refers to the map containing Saket.
+2. The function receives a copy of that map value.
+3. `make()` creates a new, separate map.
+4. The function's local parameter is assigned to this new map.
+5. The caller's variable still refers to the original map.
+
+This distinction is useful when designing functions that work with maps.
+
+# 10.13 Making an Independent Copy of a Map
+
+Suppose you have this map:
+
+```go
+a := map[string]int{
+    "Saket": 40,
+    "Rahul": 35,
+}
+```
+
+You want to create another map called `b` that can be modified independently.
+
+Simply assigning `b := a` will not do that. Both variables will refer to the same underlying map.
+
+Instead, create a new map and copy the entries.
+
+```go
+b := make(map[string]int, len(a))
+
+for key, value := range a {
+    b[key] = value
+}
+```
+
+Let's understand each line.
+
+### Step 1 — Create a new map
+
+```go
+b := make(map[string]int, len(a))
+```
+
+This creates a new, initialized map.
+
+`len(a)` provides an initial capacity hint based on the number of entries in `a`. It is not a maximum size.
+
+### Step 2 — Copy every entry
+
+```go
+for key, value := range a {
+    b[key] = value
+}
+```
+
+For each entry in `a`, the loop retrieves its key and value and inserts them into `b`.
+
+Now the two maps are independent.
+
+### Step 3 — Verify the result
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    a := map[string]int{
+        "Saket": 40,
+        "Rahul": 35,
+    }
+
+    b := make(map[string]int, len(a))
+
+    for key, value := range a {
+        b[key] = value
+    }
+
+    b["Saket"] = 41
+    b["Amit"] = 30
+
+    fmt.Println("Map a:", a)
+    fmt.Println("Map b:", b)
+}
+```
+
+Output, with map entry order unspecified:
+
+```text
+Map a: map[Rahul:35 Saket:40]
+Map b: map[Amit:30 Rahul:35 Saket:41]
+```
+
+Notice that `a["Saket"]` remains `40`, while `b["Saket"]` becomes `41`.
+
+## 10.13.1 Shallow copy versus deep copy
+
+The copying technique above creates a new map and copies each key-value pair. For our `map[string]int`, that is sufficient to make the contents independent.
+
+However, consider a map containing slices:
+
+```go
+a := map[string][]int{
+    "numbers": {1, 2, 3},
+}
+```
+
+If you copy the entries into another map, the slice values can still share their underlying arrays.
+
+For example:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    a := map[string][]int{
+        "numbers": {1, 2, 3},
+    }
+
+    b := make(map[string][]int, len(a))
+
+    for key, value := range a {
+        b[key] = value
+    }
+
+    b["numbers"][0] = 999
+
+    fmt.Println(a["numbers"])
+    fmt.Println(b["numbers"])
+}
+```
+
+Output:
+
+```text
+[999 2 3]
+[999 2 3]
+```
+
+Why did modifying `b` affect the slice accessed through `a`?
+
+Because copying the map entries copied the slice values, but did not create independent backing arrays for those slices.
+
+If you want the slices to be independent too, copy their elements:
+
+```go
+b := make(map[string][]int, len(a))
+
+for key, value := range a {
+    copiedSlice := make([]int, len(value))
+    copy(copiedSlice, value)
+
+    b[key] = copiedSlice
+}
+```
+
+Now the slices have separate backing arrays.
+
+Remember: copying a map and deeply copying everything reachable through its values are two different operations.
+
+# 10.14 Map Internals — What Happens Under the Hood?
+
+Let's now look at what happens conceptually when you insert or retrieve a map entry.
+
+Consider:
+
+```go
+ages := map[string]int{
+    "Saket": 40,
+    "Rahul": 35,
+}
+```
+
+When you execute:
+
+```go
+age := ages["Saket"]
+```
+
+Go needs to locate the entry associated with `"Saket"`.
+
+A typical hash-map lookup works conceptually like this:
+
+1. The key
+
+"Saket"
+
+2. Calculate hash information
+
+The runtime processes the key
+
+3. Locate candidate storage
+
+The hash helps identify where to search
+
+4. Find the matching key
+
+The runtime retrieves the associated value
+
+## 10.14.1 What is a hash function?
+
+A hash function takes a key and calculates a value used to help locate that key in a data structure.
+
+For example, conceptually:
+
+```text
+"Saket" → hash calculation → candidate storage location
+```
+
+The actual hash value and storage location are implementation details. You should not expect the word `"Saket"` to always map to a particular numeric position.
+
+The hash helps Go locate candidate entries efficiently. The runtime must still check whether a candidate key actually matches the requested key.
+
+## 10.14.2 What is a hash collision?
+
+A hash collision occurs when different keys produce the same relevant hash information.
+
+For example, imagine a simplified hash function that calculates a hash from the length of a string:
+
+```text
+"cat" → 3
+"dog" → 3
+```
+
+These different strings produce the same result under this simplified function.
+
+A real hash map must handle collisions correctly. Go's map implementation does this internally, so you do not need to resolve collisions yourself.
+
+This example is only an illustration; it is not Go's actual string hash algorithm.
+
+## 10.14.3 Why are maps generally fast?
+
+Map lookup, insertion, and deletion are generally $O(1)$ on average for typical workloads.
+
+This means their average cost does not grow linearly with the number of entries in the way a straightforward linear search does.
+
+For example, imagine searching for an employee in a slice:
+
+```go
+for _, employee := range employees {
+    if employee.ID == targetID {
+        // Found the employee.
+    }
+}
+```
+
+A linear search may need to inspect every employee.
+
+With a map indexed by employee ID:
+
+```go
+employee, exists := employees[targetID]
+```
+
+Go can generally locate the entry much more efficiently.
+
+This is one reason maps are useful for caches, indexes, word counters, and lookup tables.
+
+The average-case complexity is not an unconditional guarantee for every possible operation or workload.
+
+## 10.14.4 Do maps grow automatically?
+
+Yes. Go manages map storage as entries are added.
+
+For example:
+
+```go
+scores := make(map[string]int)
+
+for i := 0; i < 100000; i++ {
+    scores[fmt.Sprintf("student-%d", i)] = i
+}
+```
+
+The map can grow to accommodate these entries. You do not need to manually allocate a new array or resize the map yourself.
+
+You can provide an initial capacity hint:
+
+```go
+scores := make(map[string]int, 100000)
+```
+
+This may help reduce allocation work when you know approximately how many entries you expect.
+
+# 10.15 Concurrent Access to Maps
+
+Now let's connect maps to your future study of Go concurrency.
+
+Suppose two goroutines try to modify the same map concurrently:
+
+```go
+counts := make(map[string]int)
+```
+
+One goroutine might execute:
+
+```go
+counts["go"]++
+```
+
+while another goroutine modifies the same map.
+
+Ordinary maps do not automatically synchronize concurrent access.
+
+Concurrent unsynchronized access involving writes can cause data races or runtime errors.
+
+Later, when studying goroutines and synchronization, you will learn how to protect shared maps with a mutex.
+
+For example, the basic idea is:
+
+```go
+var mu sync.Mutex
+counts := make(map[string]int)
+
+mu.Lock()
+counts["go"]++
+mu.Unlock()
+```
+
+This example requires importing the `sync` package:
+
+```go
+import "sync"
+```
+
+The mutex ensures that only one goroutine at a time can execute the protected operation, provided all relevant accesses follow the same locking discipline.
+
+For now, remember three things:
+
+- A normal map is suitable for ordinary single-goroutine use.
+- Concurrent access involving writes requires appropriate synchronization.
+- `sync.Map` exists for certain specialized workloads, but a normal map with a mutex is often easier to understand and reason about.
+
+# 10.16 Exercise Set A — Map Fundamentals
+
+Try solving these without looking back at the examples.
+
+### Exercise 1 — Create a map
+Create a map named `ages` containing Saket (40), Rahul (35), and Amit (30). Print their ages.
+
+### Exercise 2 — Add an entry
+Add Priya, age 28, to an existing age map.
+
+### Exercise 3 — Update an entry
+Change Rahul's age to 36.
+
+### Exercise 4 — Delete an entry
+Delete Saket and print the map length before and after deletion.
+
+### Exercise 5 — Search for an employee
+Search for Amit using `value, ok`. Print the age if found, or `"Employee not found"` otherwise.
+
+### Exercise 6 — Count entries
+Create a map containing five countries and their international calling codes. Print the number of entries.
+
+### Exercise 7 — Iterate over a map
+Print every country and calling code. Your solution must work regardless of iteration order.
+
+### Exercise 8 — Predict the output
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    scores := map[string]int{
+        "A": 10,
+        "B": 20,
+    }
+
+    scores["A"] = 30
+    scores["C"] = 40
+
+    delete(scores, "B")
+
+    fmt.Println(scores["A"])
+    fmt.Println(scores["B"])
+    fmt.Println(scores["C"])
+    fmt.Println(len(scores))
+}
+```
+
+Write down the four output lines before running it.
+
+### Exercise 9 — Fix a nil map
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    var scores map[string]int
+
+    scores["A"] = 10
+
+    fmt.Println(scores)
+}
+```
+
+Explain why this program panics. Fix it in two different ways.
+
+### Exercise 10 — Copy a map
+Create a map `a`, copy its entries into an independent map `b`, modify `b`, and demonstrate that `a` remains unchanged.
+
+# 10.17 Exercise Set B — Word Frequency and Duplicate Detection
+
+## Exercise 11 — Count words
+Input:
+
+```text
+apple banana apple orange banana apple
+```
+
+Expected counts:
+
+Word
+
+Count
+
+apple
+
+3
+
+banana
+
+2
+
+orange
+
+1
+
+Hint:
+
+```go
+wordCount[word]++
+```
+
+## Exercise 12 — Count characters
+Input:
+
+```text
+hello
+```
+
+Count each character.
+
+Expected results: `h = 1`, `e = 1`, `l = 2`, `o = 1`.
+
+For this exercise, ordinary English letters are sufficient. Go's string iteration with `range` yields Unicode code points, not individual UTF-8 bytes or necessarily user-perceived characters.
+
+## Exercise 13 — Find duplicate numbers
+
+```go
+numbers := []int{1, 2, 3, 2, 4, 5, 1, 6, 3}
+```
+
+Identify the numbers occurring more than once, without reporting the same number repeatedly.
+
+Expected duplicate values: `1`, `2`, and `3`.
+
+## Exercise 14 — Find the first repeated number
+
+```go
+numbers := []int{4, 2, 7, 2, 9, 4}
+```
+
+Find the first number whose occurrence repeats as you scan from left to right.
+
+Expected answer: `2`.
+
+## Exercise 15 — Case-insensitive counting
+Input:
+
+```text
+Go go GO is fun
+```
+
+Count different capitalizations of the same word together.
+
+Expected counts:
+
+```text
+go 3
+is 1
+fun 1
+```
+
+Hint: use `strings.ToLower`.
+
+# 10.18 Mini-Project — Word Frequency Counter
+
+Now build a complete program that reads a sentence, counts the occurrences of each word, and prints the results alphabetically.
+
+```go
+package main
+
+import (
+    "bufio"
+    "fmt"
+    "os"
+    "sort"
+    "strings"
+)
+
+func main() {
+    fmt.Println("Enter a sentence:")
+
+    scanner := bufio.NewScanner(os.Stdin)
+
+    if !scanner.Scan() {
+        fmt.Println("Could not read input")
+        return
+    }
+
+    input := scanner.Text()
+    words := strings.Fields(strings.ToLower(input))
+
+    wordCount := make(map[string]int)
+
+    for _, word := range words {
+        wordCount[word]++
+    }
+
+    sortedWords := make([]string, 0, len(wordCount))
+
+    for word := range wordCount {
+        sortedWords = append(sortedWords, word)
+    }
+
+    sort.Strings(sortedWords)
+
+    fmt.Println("\nWord frequencies:")
+
+    for _, word := range sortedWords {
+        fmt.Printf("%-12s %d\n", word, wordCount[word])
+    }
+
+    if err := scanner.Err(); err != nil {
+        fmt.Println("Error reading input:", err)
+    }
+}
+```
+
+### Sample run
+
+Input:
+
+```text
+go is simple and go is powerful
+```
+
+Output:
+
+```text
+Word frequencies:
+
+and          1
+go           2
+is           2
+powerful     1
+simple       1
+```
+
+### What you should understand from this project
+
+- `bufio.Scanner` reads input.
+- `strings.ToLower` normalizes capitalization.
+- `strings.Fields` splits the sentence into words.
+- `make(map[string]int)` creates the frequency map.
+- `wordCount[word]++` increments the frequency.
+- `sort.Strings` provides predictable alphabetical output.
+- `fmt.Printf` formats the report.
+
+This introductory version treats punctuation as part of a word. For example, `"go"` and `"go,"` count separately. You can improve the program later by adding punctuation normalization.
+
+# 10.19 Final Challenge — Employee Management
+
+Build a small employee management program using a map.
+
+Start with:
+
+```go
+type Employee struct {
+    Name       string
+    Age        int
+    Department string
+}
+```
+
+Create the map:
+
+```go
+employees := make(map[string]Employee)
+```
+
+Implement the following operations:
+
+1. Add an employee.
+2. Search for an employee by ID.
+3. Update an employee's department.
+4. Delete an employee.
+5. Print all employees.
+6. Print the total employee count.
+7. Handle missing employee IDs.
+8. Sort employee IDs before printing if you want predictable output.
+
+Remember to use `value, ok` for searches and assign modified structs back into the map when storing structs by value.
+
+## Chapter 10 completion checklist
+
+Your progress
+
+## 0/12
+
+Create maps using literals and make
+Understand nil maps and initialized empty maps
+Read, add, update, and delete entries
+Use the value, ok lookup pattern
+Iterate over keys and values using range
+Understand unspecified map iteration order
+Count words and characters
+Distinguish map assignment from independent copying
+Understand comparable map key types
+Use maps with structs
+Understand concurrent-access risks
+Build the word frequency counter independently
+
+Recommended order: complete Exercises 1–10, then Exercises 11–15, and finally build the word frequency counter independently.
+
+Once these concepts are comfortable, you will have a strong foundation for using maps in Go backend applications, including request processing, caching, configuration, and working with database results.
 
 
